@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "Reinforced Anvil"
+description = "A sturdy anvil that resonates with nearby equipment. Gains bonus effects when adjacent to other items."
+category = 1
+effect_type = 1
+trigger_timing = 5
+shape = [Vector2i(0, 0), Vector2i(0, 1), Vector2i(1, 0), Vector2i(1, 1)]
+effect_params = {
+"adjacent_bonus": 5,
+"score_multiplier_per_adjacent": 0.1
+}
+priority = 5

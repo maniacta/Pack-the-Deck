@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "Lucky Coin"
+description = "A fortunate coin that brings wealth. Gain +1 gold at the start of each turn."
+category = 3
+effect_type = 2
+trigger_timing = 0
+shape = [Vector2i(0, 0)]
+effect_params = {
+"gold_per_turn": 1
+}
+priority = 0
