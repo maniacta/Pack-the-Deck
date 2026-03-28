@@ -199,11 +199,84 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
+### 牌型判断系统 (scripts/systems/)
+
+#### hand_type.gd
+**类型**: `class_name HandType extends RefCounted`
+
+**职责**: 定义扑克牌型枚举和牌型结果类
+
+**主要枚举**:
+- `Type` - 牌型类型（HIGH_CARD, ONE_PAIR, TWO_PAIR, THREE_OF_A_KIND, STRAIGHT, FLUSH, FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH, ROYAL_FLUSH）
+- 倍率映射（HIGH_CARD=1, ONE_PAIR=2, ..., ROYAL_FLUSH=100）
+
+**主要方法**:
+- `get_multiplier(hand_type) -> int` - 获取牌型倍率
+- `get_display_name_cn(hand_type) -> String` - 获取中文显示名
+- `get_display_name_en(hand_type) -> String` - 获取英文显示名
+
+**内嵌类 HandResult**:
+- `hand_type: Type` - 识别出的牌型
+- `multiplier: int` - 牌型倍率
+- `cards: Array[CardData]` - 组成牌型的卡牌
+- `base_score: int` - 基础分数总和
+- `is_valid: bool` - 是否有效
+- `get_total_score() -> int` - 获取总分（基础分×倍率）
+
+---
+
+#### hand_classifier.gd
+**类型**: `class_name HandClassifier extends RefCounted`
+
+**职责**: 牌型识别器，判断玩家选出的卡牌是什么牌型
+
+**主要方法**:
+- `evaluate(cards: Array[CardData]) -> HandResult` - 评估卡牌并返回最佳牌型
+- `_check_one_pair(cards) -> HandResult` - 对子判断
+- `_check_two_pair(cards) -> HandResult` - 两对判断
+- `_check_three_of_a_kind(cards) -> HandResult` - 三条判断
+- `_check_straight(cards) -> HandResult` - 顺子判断（支持A作1或14）
+- `_check_flush(cards) -> HandResult` - 同花判断
+- `_check_full_house(cards) -> HandResult` - 葫芦判断
+- `_check_four_of_a_kind(cards) -> HandResult` - 四条判断
+- `_check_straight_flush(cards) -> HandResult` - 同花顺判断
+- `_check_royal_flush(cards) -> HandResult` - 皇家同花顺判断
+
+**辅助方法**:
+- `_count_ranks(cards) -> Dictionary` - 统计各牌面值出现次数
+- `_count_suits(cards) -> Dictionary` - 统计各花色出现次数
+- `_is_consecutive(values) -> bool` - 检查数组是否连续
+
+---
+
+### 测试文件 (tests/)
+
+#### test_hand_classifier.gd
+**类型**: `class_name TestHandClassifier extends RefCounted`
+
+**职责**: HandClassifier 类的测试用例
+
+**测试覆盖**:
+- 高牌识别
+- 对子识别（有效/无效）
+- 两对识别
+- 三条识别
+- 顺子识别（包括A低顺子）
+- 同花识别
+- 葫芦识别
+- 四条识别
+- 同花顺识别
+- 皇家同花顺识别
+- 边界情况（空数组、单张、4张）
+- 分数计算验证
+
+---
+
 ## 待实现系统
 
 以下系统尚未实现，将在后续阶段开发：
 
-- [ ] 牌型判断系统 (scripts/systems/hand_classifier.gd)
+- [x] 牌型判断系统 (scripts/systems/hand_classifier.gd) ✅
 - [ ] 得分计算系统 (scripts/systems/score_calculator.gd)
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
@@ -213,6 +286,6 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-03-26  
-**已完成阶段**: 阶段一（项目骨架与数据结构）
+**文档版本**: v1.1  
+**最后更新**: 2025-03-28  
+**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）
