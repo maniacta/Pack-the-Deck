@@ -264,8 +264,8 @@ static func _test_stage_description() -> bool:
 	if not boss_desc.contains("特殊规则"):
 		push_error("FAIL: Boss description should contain '特殊规则'")
 		passed = false
-	if not boss_desc.contains("方块不计分"):
-		push_error("FAIL: Boss description should contain boss rule")
+	if not boss_desc.contains("方块 不计分"):
+		push_error("FAIL: Boss description should contain '方块 不计分'")
 		passed = false
 	
 	if passed:
