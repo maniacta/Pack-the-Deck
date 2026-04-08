@@ -249,6 +249,100 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
+### 得分计算系统 (scripts/systems/)
+
+#### blind_type.gd
+**类型**: `class_name BlindType extends RefCounted`
+
+**职责**: 定义盲注类型枚举和倍率映射
+
+**主要枚举**:
+- `Type` - 盲注类型（SMALL_BLIND, BIG_BLIND, BOSS_BLIND）
+- 目标分数倍率映射（SMALL=1, BIG=2, BOSS=3）
+- 奖励倍率映射（SMALL=1, BIG=2, BOSS=3）
+
+**主要方法**:
+- `get_target_multiplier(blind_type) -> int` - 获取目标分数倍率
+- `get_reward_multiplier(blind_type) -> int` - 获取奖励倍率
+- `get_display_name_cn(blind_type) -> String` - 获取中文显示名
+- `is_boss(blind_type) -> bool` - 检查是否为 Boss 盲注
+
+---
+
+#### score_calculator.gd
+**类型**: `class_name ScoreCalculator extends RefCounted`
+
+**职责**: 得分计算器，整合牌型分数、盲注倍率和装备效果
+
+**主要方法**:
+- `calculate_score(hand_result, blind_type) -> int` - 计算最终得分
+- `calculate_score_with_modifiers(hand_result, blind_type, modifiers) -> int` - 带装备修正的计算
+- `check_victory(current_score, target_score) -> bool` - 过关判定
+- `calculate_reward(blind_type, base_reward) -> int` - 计算奖励金币
+- `format_score_display(hand_result, blind_type) -> String` - 格式化得分显示
+
+**内嵌类 ScoreBreakdown**:
+- 分数详细分解（卡牌基础分、牌型倍率、盲注倍率、装备加成）
+- 支持装备效果应用
+- 提供详细显示字符串
+
+---
+
+#### stage_config.gd
+**类型**: `class_name StageConfig extends Resource`
+
+**职责**: 关卡配置，定义目标分数、回合数、盲注类型和 Boss 规则
+
+**主要属性**:
+- `stage_id: String` - 关卡 ID
+- `display_name: String` - 关卡名称
+- `base_target_score: int` - 基础目标分数
+- `max_turns: int` - 最大回合数
+- `blind_type: BlindType.Type` - 盲注类型
+- `boss_rule: BossRule` - Boss 特殊规则
+- `boss_rule_param: Dictionary` - Boss 规则参数
+- `base_reward: int` - 基础奖励金币
+
+**主要方法**:
+- `get_target_score() -> int` - 获取实际目标分数（基础×盲注倍率）
+- `get_reward() -> int` - 获取实际奖励金币
+- `has_boss_rule() -> bool` - 检查是否有 Boss 规则
+- `get_boss_rule_description() -> String` - 获取 Boss 规则描述
+- `get_full_description() -> String` - 获取完整关卡描述
+- `is_valid() -> bool` - 验证配置有效性
+
+**枚举 BossRule**:
+- NONE - 无特殊规则
+- SUIT_EXCLUDED - 某花色不计分
+- HAND_TYPE_EXCLUDED - 某牌型不计分
+- PLAY_LIMIT - 出牌次数限制
+- CARD_LIMIT - 手牌数量限制
+
+---
+
+### 关卡资源 (resources/stages/)
+
+#### stage_1.tres
+**名称**: 第一关 - 入门
+**目标分数**: 100（小盲注 ×1）
+**回合限制**: 3
+**奖励**: 10 金币
+
+#### stage_2.tres
+**名称**: 第二关 - 进阶
+**目标分数**: 600（大盲注 ×2）
+**回合限制**: 3
+**奖励**: 30 金币
+
+#### stage_3.tres
+**名称**: 第三关 - Boss
+**目标分数**: 1500（Boss 盲注 ×3）
+**回合限制**: 4
+**奖励**: 75 金币
+**特殊规则**: 方块不计分
+
+---
+
 ### 测试文件 (tests/)
 
 #### test_hand_classifier.gd
@@ -272,20 +366,53 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
+#### test_score_calculator.gd
+**类型**: `class_name TestScoreCalculator extends RefCounted`
+
+**职责**: ScoreCalculator 和 BlindType 类的测试用例
+
+**测试覆盖**:
+- 盲注倍率验证（小/大/Boss）
+- 基础分数计算
+- 盲注分数计算
+- 过关判定
+- 奖励计算
+- 装备修正器效果
+- ScoreBreakdown 类测试
+- 显示格式测试
+
+---
+
+#### test_stage_config.gd
+**类型**: `class_name TestStageConfig extends RefCounted`
+
+**职责**: StageConfig 类的测试用例
+
+**测试覆盖**:
+- 关卡创建
+- 目标分数计算（盲注倍率）
+- 奖励计算
+- Boss 特殊规则
+- 关卡描述
+- 配置验证
+- 工厂方法
+
+---
+
 ## 待实现系统
 
 以下系统尚未实现，将在后续阶段开发：
 
 - [x] 牌型判断系统 (scripts/systems/hand_classifier.gd) ✅
-- [ ] 得分计算系统 (scripts/systems/score_calculator.gd)
+- [x] 得分计算系统 (scripts/systems/score_calculator.gd) ✅
+- [x] 关卡配置 (scripts/systems/stage_config.gd) ✅
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
-- [ ] 关卡配置 (scripts/systems/stage_config.gd)
 - [ ] 商店系统 (scripts/systems/shop_manager.gd)
 - [ ] 游戏状态机 (scripts/systems/game_manager.gd)
 
 ---
 
-**文档版本**: v1.1  
-**最后更新**: 2025-03-28  
-**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）
+**文档版本**: v1.2  
+**最后更新**: 2026-04-08  
+**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）

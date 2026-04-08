@@ -1,0 +1,13 @@
+[gd_resource type="StageConfig" format=3 uid="uid://stage_001"]
+
+[resource]
+stage_id = "stage_1"
+display_name = "第一关 - 入门"
+base_target_score = 100
+max_turns = 3
+blind_type = 0
+boss_rule = 0
+base_reward = 10
+initial_hand_size = 8
+max_hand_size = 8
+max_selection_size = 5

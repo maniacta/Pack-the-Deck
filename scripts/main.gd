@@ -14,7 +14,10 @@ func _ready() -> void:
 
 func _run_tests() -> void:
 	print("\n========================================")
-	print("Running CardData Tests...")
+	print("Running All Tests...")
 	print("========================================")
 	TestCardData.run_all_tests()
+	TestHandClassifier.run_all_tests()
+	TestScoreCalculator.run_all_tests()
+	TestStageConfig.run_all_tests()
 	print("========================================\n")

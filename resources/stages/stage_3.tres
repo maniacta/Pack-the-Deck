@@ -1,0 +1,18 @@
+[gd_resource type="StageConfig" format=3 uid="uid://stage_003"]
+
+[resource]
+stage_id = "stage_3"
+display_name = "第三关 - Boss"
+base_target_score = 500
+max_turns = 4
+blind_type = 2
+boss_rule = 1
+base_reward = 25
+initial_hand_size = 8
+max_hand_size = 8
+max_selection_size = 5
+
+[dict]
+boss_rule_param = {
+"suit_name": "方块"
+}
