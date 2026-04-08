@@ -5,8 +5,7 @@ extends Resource
 ## Stores rank (2-10, J, Q, K, A), suit (Spades, Hearts, Diamonds, Clubs),
 ## and provides base score calculation.
 
-## Signal emitted when card data changes
-signal changed()
+# Note: Using inherited 'changed' signal from Resource class
 
 ## Card suits - standard French-suited playing cards
 enum Suit {

@@ -3,6 +3,7 @@
 *.import
 export/
 .godot/
+addons/
 
 # Generated files
 *.translation

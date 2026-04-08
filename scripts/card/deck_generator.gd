@@ -59,7 +59,7 @@ static func generate_all_cards() -> Array[CardData]:
 ## Load all card resources from the resources/cards directory
 static func load_all_cards() -> Array[CardData]:
 	var cards: Array[CardData] = []
-	var dir := DirAccess.open(OUTPUT_DIR)
+	var dir: DirAccess = DirAccess.open(OUTPUT_DIR)
 	
 	if not dir:
 		push_error("Cannot open cards directory: %s" % OUTPUT_DIR)

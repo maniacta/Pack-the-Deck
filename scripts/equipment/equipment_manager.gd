@@ -158,7 +158,7 @@ func get_adjacent_equipment(pos: Vector2i) -> Array[EquipmentData]:
 	
 	for dir: Vector2i in directions:
 		var check_pos := pos + dir
-		var equipment := get_equipment_at(check_pos)
+		var equipment: EquipmentData = get_equipment_at(check_pos)
 		if equipment and not equipment in adjacent:
 			adjacent.append(equipment)
 	

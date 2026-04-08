@@ -4,8 +4,7 @@ extends Resource
 ## Equipment data for items that modify game rules.
 ## Equipment can have different shapes, effects, and categories.
 
-## Signal emitted when equipment data changes
-signal changed()
+# Note: Using inherited 'changed' signal from Resource class
 
 ## Equipment categories - used for conflict detection
 enum Category {

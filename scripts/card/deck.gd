@@ -9,13 +9,9 @@ var _cards: Array[CardData] = []
 ## Cards that have been drawn (discard pile)
 var _discarded: Array[CardData] = []
 
-## Random number generator for shuffling
-var _rng := RandomNumberGenerator.new()
-
 
 ## Create a new standard 52-card deck
 func _init() -> void:
-	_rng.randomize()
 	_initialize_standard_deck()
 
 
@@ -49,7 +45,7 @@ func _initialize_standard_deck() -> void:
 
 ## Shuffle the deck randomly
 func shuffle() -> void:
-	_rng.shuffle(_cards)
+	_cards.shuffle()
 
 
 ## Draw a card from the top of the deck
@@ -62,7 +58,7 @@ func draw_card() -> CardData:
 			return null
 		_reshuffle_discard()
 	
-	var card := _cards.pop_back()
+	var card: CardData = _cards.pop_back()
 	return card
 
 
