@@ -166,5 +166,40 @@
 
 ---
 
-**文档版本**: v1.2  
-**最后更新**: 2026-04-08
+### 2026-04-09 - 战斗场景设计文档创建
+
+#### 背景 ✅
+- [x] 项目已完成阶段一至阶段三（数据结构、牌型判断、得分计算）
+- [x] 发现问题：只能通过测试脚本验证功能，缺乏真实游戏场景
+- [x] 需要创建战斗场景来可视化测试已完成的核心系统
+
+#### 新增设计文档 ✅
+- [x] 创建 battle-scene-design.md - 战斗场景设计与开发指南
+- [x] 定义场景目标：集成已完成功能，提供可视化交互测试环境
+- [x] 设计场景树结构：BattleScene → 各 UI 区域
+- [x] 定义核心组件：
+  - Card.gd（卡牌显示与选择交互）
+  - BattleController.gd（场景逻辑控制）
+  - HandArea.gd（手牌区域）
+  - PlayArea.gd（出牌区域）
+  - InfoPanel.gd（信息面板）
+  - ActionBar.gd（操作按钮）
+- [x] 系统整合设计：如何调用 Deck/HandClassifier/ScoreCalculator/StageConfig
+- [x] UI 规格定义：尺寸、间距、字体、颜色等详细参数
+- [x] 测试流程规划：验收标准清单
+
+#### 文档更新 ✅
+- [x] 更新 architecture.md - 记录 battle-scene-design.md
+- [x] 更新 progress.md - 本文件
+
+#### 下一步计划
+- [ ] 实现战斗场景（按照 battle-scene-design.md）
+- [ ] 创建 Card.gd 脚本和 Card.tscn 场景
+- [ ] 创建 BattleController.gd 脚本
+- [ ] 创建各个 UI 区域场景（HandArea, PlayArea, InfoPanel, ActionBar）
+- [ ] 整合到主场景进行测试
+
+---
+
+**文档版本**: v1.3  
+**最后更新**: 2026-04-09

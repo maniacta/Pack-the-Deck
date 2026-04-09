@@ -375,6 +375,7 @@ refactor(score): 提取倍率计算为独立函数
 - 写任何代码前必须完整阅读 memory-bank/@architecture.md（用于记录每个文件的作用）
 - 写任何代码前必须完整阅读 memory-bank/@game-design-document.md
 - 每完成一个重大功能或里程碑后，必须更新 memory-bank/@architecture.md 和 memory-bank/@progress.md（记录已完成步骤）
+- 必须使用中文回答
 
 ---
 
