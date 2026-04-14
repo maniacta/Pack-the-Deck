@@ -406,10 +406,138 @@ MVP 阶段：同类装备不能同时装备。
 - [x] 牌型判断系统 (scripts/systems/hand_classifier.gd) ✅
 - [x] 得分计算系统 (scripts/systems/score_calculator.gd) ✅
 - [x] 关卡配置 (scripts/systems/stage_config.gd) ✅
+- [x] 战斗场景 (scenes/battle.tscn) ✅
+- [x] 卡牌显示组件 (scripts/ui/card_display.gd) ✅
+- [x] 战斗控制器 (scripts/battle_controller.gd) ✅
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
 - [ ] 商店系统 (scripts/systems/shop_manager.gd)
 - [ ] 游戏状态机 (scripts/systems/game_manager.gd)
+
+---
+
+## 战斗场景系统 (scripts/ 和 scenes/)
+
+### scripts/ui/card_display.gd
+**类型**: `class_name CardDisplay extends Control`
+
+**职责**: 卡牌显示组件，显示单张卡牌并处理选择交互
+
+**主要属性**:
+- `card_data: CardData` - 卡牌数据
+- `is_selected: bool` - 是否选中
+- `is_selectable: bool` - 是否可选择
+
+**主要方法**:
+- `setup(data: CardData)` - 设置卡牌数据并更新显示
+- `toggle_selection()` - 切换选中状态
+- `set_selected(selected: bool)` - 设置选中状态
+- `clear_selection()` - 清除选中状态
+
+**信号**:
+- `card_clicked(card_data: CardData)` - 卡牌点击时发出
+- `selection_changed(is_selected: bool)` - 选中状态变化时发出
+
+**颜色常量**:
+- `COLOR_CARD_BLACK_SUIT` - 黑桃/梅花背景色
+- `COLOR_CARD_RED_SUIT` - 红心/方块背景色
+- `COLOR_SELECTION_BORDER` - 选中边框金色
+
+---
+
+### scripts/battle_controller.gd
+**类型**: `class_name BattleController extends Node`
+
+**职责**: 战斗场景控制器，管理完整的游戏流程
+
+**游戏状态**:
+- `GameState.INIT` - 初始化阶段
+- `GameState.PLAYER_TURN` - 玩家回合
+- `GameState.VICTORY` - 过关胜利
+- `GameState.DEFEAT` - 回合耗尽失败
+
+**主要属性**:
+- `stage_config: StageConfig` - 当前关卡配置
+- `_deck: Deck` - 牌组
+- `_hand: Array[CardData]` - 手牌（最多8张）
+- `_selected_cards: Array[CardData]` - 选中卡牌（最多5张）
+- `_current_score: int` - 累计分数
+- `_remaining_turns: int` - 剩余回合数
+
+**主要方法**:
+- `setup_stage(config: StageConfig)` - 加载关卡配置
+- `draw_initial_hand()` - 抽取初始手牌
+- `draw_cards_to_fill(count: int)` - 补充手牌
+- `toggle_card_selection(card: CardData)` - 切换卡牌选中
+- `play_cards()` - 出牌流程
+- `discard_cards()` - 弃牌流程
+- `check_game_result()` - 检查胜利/失败
+- `show_victory()` / `show_defeat()` - 显示结果
+- `reset_stage()` - 重置关卡
+
+**UI 更新方法**:
+- `update_hand_display()` - 更新手牌显示
+- `update_selection_display()` - 更新出牌区显示
+- `update_info_display()` - 更新信息栏
+- `update_button_states()` - 更新按钮状态
+
+---
+
+### scenes/card_display.tscn
+**类型**: 场景文件
+
+**节点结构**:
+- `CardDisplay` (Control, 100×140) - 根节点
+  - `CardBackground` (Panel) - 卡牌背景
+  - `RankLabel` (Label) - 牌面值（左上角，24px）
+  - `SuitLabel` (Label) - 花色符号（中央，32px）
+  - `SelectionBorder` (Panel) - 选中边框（默认隐藏）
+
+---
+
+### scenes/battle.tscn
+**类型**: 场景文件
+
+**节点结构**:
+- `BattleScene` (Control) - 根节点
+  - `Background` (ColorRect) - 深色背景 #1a1a2e
+  - `BattleController` (Node) - 脚本节点
+  - `BattleUI` (VBoxContainer) - 主 UI 容器
+    - `InfoPanel` (HBoxContainer) - 顶部信息栏
+      - `StageLabel` - 关卡名称
+      - `TargetScoreLabel` - 目标分数
+      - `CurrentScoreLabel` - 当前累计分数
+      - `RemainingTurnsLabel` - 剩余回合数
+      - `BlindTypeLabel` - 盲注类型
+    - `GameArea` (VBoxContainer) - 中央游戏区域
+      - `PlayZone` (Panel) - 出牌区域
+        - `SelectedCardsContainer` - 已选卡牌容器
+        - `HandTypeLabel` - 牌型名称
+        - `ScorePreviewLabel` - 预计得分
+      - `HandArea` (ScrollContainer) - 手牌区域
+        - `HandContainer` - 手牌容器
+    - `ActionBar` (HBoxContainer) - 底部操作栏
+      - `PlayButton` - 出牌按钮
+      - `DiscardButton` - 弃牌按钮
+      - `ResetButton` - 重置按钮
+      - `StatusLabel` - 状态提示
+    - `ResultPanel` (Panel) - 结果面板（胜利/失败）
+
+---
+
+### scenes/main.tscn
+**类型**: 场景文件
+
+**节点结构**:
+- `Main` (Control) - 根节点
+  - `Background` (ColorRect) - 深色背景
+  - `TitleContainer` (VBoxContainer) - 标题容器
+    - `TitleLabel` - 游戏标题
+    - `SubtitleLabel` - 副标题
+    - `ButtonContainer` (HBoxContainer) - 按钮容器
+      - `StartButton` - 开始游戏按钮
+      - `TestButton` - 运行测试按钮
+    - `VersionLabel` - 版本信息
 
 ---
 
@@ -438,7 +566,12 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
-**文档版本**: v1.3  
-**最后更新**: 2026-04-09  
-**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）  
-**新增文档**: battle-scene-design.md（战斗场景设计开发文档）
+**文档版本**: v1.4  
+**最后更新**: 2026-04-14  
+**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）  
+**新增文件**: 
+- scripts/ui/card_display.gd（卡牌显示组件）
+- scripts/battle_controller.gd（战斗控制器）
+- scenes/card_display.tscn（卡牌场景）
+- scenes/battle.tscn（战斗场景）
+- scenes/main.tscn（更新主场景）

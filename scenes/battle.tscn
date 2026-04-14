@@ -1,0 +1,290 @@
+[gd_scene load_steps=9 format=3 uid="uid://battle_scene"]
+
+[ext_resource type="Script" path="res://scripts/battle_controller.gd" id="1_battle_controller"]
+[ext_resource type="Script" path="res://scripts/systems/stage_config.gd" id="2_stage_config"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_background"]
+bg_color = Color(0.102, 0.102, 0.18, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_playzone"]
+bg_color = Color(0.15, 0.15, 0.25, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.45, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result_panel"]
+bg_color = Color(0.2, 0.2, 0.3, 0.9)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.5, 0.5, 0.7, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
+bg_color = Color(0.231, 0.51, 0.965, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_disabled"]
+bg_color = Color(0.42, 0.45, 0.5, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hand_area"]
+bg_color = Color(0.12, 0.12, 0.2, 1)
+border_width_top = 1
+border_color = Color(0.25, 0.25, 0.35, 1)
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="BattleController" type="Node" parent="."]
+script = ExtResource("1_battle_controller")
+
+[node name="BattleUI" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="InfoPanel" type="HBoxContainer" parent="BattleUI"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="StageLabel" type="Label" parent="BattleUI/InfoPanel"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/font_size = 18
+text = "关卡 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TargetScoreLabel" type="Label" parent="BattleUI/InfoPanel"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.749, 0.749, 0.749, 1)
+theme_override_constants/font_size = 16
+text = "目标: 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CurrentScoreLabel" type="Label" parent="BattleUI/InfoPanel"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.29, 0.788, 0.502, 1)
+theme_override_constants/font_size = 20
+text = "得分: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RemainingTurnsLabel" type="Label" parent="BattleUI/InfoPanel"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.973, 0.545, 0.435, 1)
+theme_override_constants/font_size = 16
+text = "回合: 3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BlindTypeLabel" type="Label" parent="BattleUI/InfoPanel"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.749, 0.749, 0.749, 1)
+theme_override_constants/font_size = 16
+text = "小盲注"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GameArea" type="VBoxContainer" parent="BattleUI"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="PlayZone" type="Panel" parent="BattleUI/GameArea"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_playzone")
+
+[node name="SelectedCardsContainer" type="HBoxContainer" parent="BattleUI/GameArea/PlayZone"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="HandTypeLabel" type="Label" parent="BattleUI/GameArea/PlayZone"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -45.0
+offset_right = 100.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_constants/font_size = 20
+text = "选择卡牌出牌"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScorePreviewLabel" type="Label" parent="BattleUI/GameArea/PlayZone"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -25.0
+offset_right = 100.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.4, 0.8, 0.6, 1)
+theme_override_constants/font_size = 18
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HandArea" type="ScrollContainer" parent="BattleUI/GameArea"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_hand_area")
+horizontal_scroll_mode = 2
+
+[node name="HandContainer" type="HBoxContainer" parent="BattleUI/GameArea/HandArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ActionBar" type="HBoxContainer" parent="BattleUI"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="BattleUI/ActionBar"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+disabled = true
+text = "出牌"
+
+[node name="DiscardButton" type="Button" parent="BattleUI/ActionBar"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+disabled = true
+text = "弃牌"
+
+[node name="ResetButton" type="Button" parent="BattleUI/ActionBar"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+text = "重置"
+
+[node name="StatusLabel" type="Label" parent="BattleUI/ActionBar"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.749, 0.749, 0.749, 1)
+theme_override_constants/font_size = 16
+text = "点击卡牌选择"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResultPanel" type="Panel" parent="BattleUI"]
+visible = false
+custom_minimum_size = Vector2(300, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
+
+[node name="ResultLabel" type="Label" parent="BattleUI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 30.0
+offset_right = 100.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.29, 0.788, 0.502, 1)
+theme_override_constants/font_size = 28
+text = "过关！"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FinalScoreLabel" type="Label" parent="BattleUI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 80.0
+offset_right = 100.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/font_size = 18
+text = "最终得分: 150 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
