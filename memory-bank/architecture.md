@@ -656,7 +656,15 @@ boss_rule_param = {"limit": 5}
       - `DiscardButton` - 弃牌按钮
       - `ResetButton` - 重置按钮
       - `StatusLabel` - 状态提示
-    - `ResultPanel` (Panel) - 结果面板（胜利/失败）
+    - `ResultPanel` (Panel) - 结果面板（过关/失败结算）
+      - `ResultLabel` - 结果标题（过关/失败）
+      - `ScoreInfoLabel` - 得分信息
+      - `RewardInfoLabel` - 奖励信息
+      - `GoldInfoLabel` - 当前金币
+      - `ButtonContainer` (HBoxContainer) - 操作按钮容器
+        - `NextStageButton` - 下一关按钮（有下一关时显示）
+        - `ShopButton` - 商店按钮（预留，暂未开放）
+        - `RetryButton` - 重试按钮
 
 ---
 
@@ -701,11 +709,7 @@ boss_rule_param = {"limit": 5}
 
 ---
 
-**文档版本**: v1.6  
+**文档版本**: v1.7  
 **最后更新**: 2026-04-15  
-**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）、阶段五（基础装备系统）、阶段六（战斗循环完整流程）  
-**新增文件**: 
-- scripts/systems/stage_manager.gd（关卡管理器）
-- scripts/battle_controller.gd（更新：Boss 规则支持、StageManager 集成）
-- tests/test_stage_manager.gd（关卡管理测试）
-- tests/test_boss_rules.gd（Boss 规则测试）
+**已完成阶段**: 阶段一至六全部完成  
+**本次更新**: 优化关卡结算面板，添加下一关/商店/重试按钮，不再自动进入下一关

@@ -251,7 +251,7 @@ vertical_alignment = 1
 
 [node name="ResultPanel" type="Panel" parent="BattleUI"]
 visible = false
-custom_minimum_size = Vector2(300, 150)
+custom_minimum_size = Vector2(400, 220)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -263,9 +263,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -100.0
-offset_top = 30.0
+offset_top = 20.0
 offset_right = 100.0
-offset_bottom = 70.0
+offset_bottom = 55.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0.29, 0.788, 0.502, 1)
 theme_override_constants/font_size = 28
@@ -273,18 +273,88 @@ text = "过关！"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="FinalScoreLabel" type="Label" parent="BattleUI/ResultPanel"]
+[node name="ScoreInfoLabel" type="Label" parent="BattleUI/ResultPanel"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -100.0
-offset_top = 80.0
-offset_right = 100.0
-offset_bottom = 120.0
+offset_left = -180.0
+offset_top = 60.0
+offset_right = 180.0
+offset_bottom = 100.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_constants/font_size = 18
-text = "最终得分: 150 / 100"
+theme_override_constants/font_size = 16
+text = "得分: 150 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="RewardInfoLabel" type="Label" parent="BattleUI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 100.0
+offset_right = 180.0
+offset_bottom = 130.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_constants/font_size = 16
+text = "奖励: +10 金币"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GoldInfoLabel" type="Label" parent="BattleUI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 130.0
+offset_right = 180.0
+offset_bottom = 155.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.749, 0.749, 0.749, 1)
+theme_override_constants/font_size = 14
+text = "当前金币: 10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonContainer" type="HBoxContainer" parent="BattleUI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -65.0
+offset_right = 180.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="NextStageButton" type="Button" parent="BattleUI/ResultPanel/ButtonContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+text = "下一关"
+
+[node name="ShopButton" type="Button" parent="BattleUI/ResultPanel/ButtonContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+disabled = true
+text = "商店"
+
+[node name="RetryButton" type="Button" parent="BattleUI/ResultPanel/ButtonContainer"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_button_disabled")
+text = "重试"

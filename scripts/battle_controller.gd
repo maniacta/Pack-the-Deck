@@ -86,7 +86,12 @@ var _play_card_displays: Array[CardDisplay] = []
 
 @onready var _result_panel: Panel = $"../BattleUI/ResultPanel"
 @onready var _result_label: Label = $"../BattleUI/ResultPanel/ResultLabel"
-@onready var _final_score_label: Label = $"../BattleUI/ResultPanel/FinalScoreLabel"
+@onready var _score_info_label: Label = $"../BattleUI/ResultPanel/ScoreInfoLabel"
+@onready var _reward_info_label: Label = $"../BattleUI/ResultPanel/RewardInfoLabel"
+@onready var _gold_info_label: Label = $"../BattleUI/ResultPanel/GoldInfoLabel"
+@onready var _next_stage_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/NextStageButton"
+@onready var _shop_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/ShopButton"
+@onready var _retry_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/RetryButton"
 
 
 func _ready() -> void:
@@ -97,6 +102,11 @@ func _ready() -> void:
 	_play_button.pressed.connect(_on_play_button_pressed)
 	_discard_button.pressed.connect(_on_discard_button_pressed)
 	_reset_button.pressed.connect(_on_reset_button_pressed)
+	
+	# Initialize result panel button connections
+	_next_stage_button.pressed.connect(_on_next_stage_button_pressed)
+	_shop_button.pressed.connect(_on_shop_button_pressed)
+	_retry_button.pressed.connect(_on_retry_button_pressed)
 	
 	# Hide result panel initially
 	_result_panel.visible = false
@@ -665,60 +675,126 @@ func check_game_result() -> void:
 		_status_label.text = "继续选择卡牌"
 
 
-## Show victory screen
+## Show victory screen with result panel
 func show_victory() -> void:
 	_current_state = GameState.VICTORY
 	
-	# Calculate and award reward
+	# Calculate reward
 	var reward: int = stage_config.get_reward()
+	
+	# Add gold through stage manager
 	if _stage_manager:
 		_stage_manager.add_gold(reward)
 		_player_gold = _stage_manager.get_player_gold()
 	
+	# Show result panel
 	_result_panel.visible = true
 	_result_label.text = "过关！"
 	_result_label.add_theme_color_override("font_color", Color("#4ade80"))
 	
-	# Check if there's a next stage
+	# Update score info
+	_score_info_label.text = "得分: %d / %d" % [_current_score, stage_config.get_target_score()]
+	
+	# Update reward info
+	_reward_info_label.text = "奖励: +%d 金币" % reward
+	
+	# Update gold info
+	_gold_info_label.text = "当前金币: %d" % _player_gold
+	
+	# Update buttons based on game state
 	var has_next: bool = _stage_manager and _stage_manager.has_next_stage()
+	_next_stage_button.visible = has_next
+	_next_stage_button.disabled = not has_next
+	
 	if has_next:
-		_final_score_label.text = "得分: %d / %d\n奖励: %d 金币\n点击重置进入下一关" % [
-			_current_score, stage_config.get_target_score(), reward
-		]
-		_status_label.text = "过关！获得 %d 金币。进入下一关..." % reward
+		_next_stage_button.text = "下一关"
 	else:
-		_final_score_label.text = "得分: %d / %d\n奖励: %d 金币\n恭喜完成所有关卡！" % [
-			_current_score, stage_config.get_target_score(), reward
-		]
-		_status_label.text = "游戏胜利！获得 %d 金币" % reward
+		_next_stage_button.text = "完成"
+		_next_stage_button.visible = false
+	
+	# Shop button (disabled for MVP, will be enabled in future)
+	_shop_button.disabled = true
+	_shop_button.text = "商店 (暂未开放)"
+	
+	# Retry button always available
+	_retry_button.disabled = false
+	_retry_button.text = "重试本关"
 	
 	# Disable play and discard buttons
 	_play_button.disabled = true
 	_discard_button.disabled = true
 	
-	# Update stage manager progress
-	if _stage_manager:
-		_stage_manager.complete_stage(_current_score, reward)
+	# Update status
+	_status_label.text = "过关！获得 %d 金币" % reward
 	
-	print("胜利！得分: %d / 目标: %d, 奖励: %d 金币" % [
-		_current_score, stage_config.get_target_score(), reward
+	print("胜利！得分: %d / 目标: %d, 奖励: %d 金币, 累计金币: %d" % [
+		_current_score, stage_config.get_target_score(), reward, _player_gold
 	])
 
 
-## Show defeat screen
+## Handle next stage button click
+func _on_next_stage_button_pressed() -> void:
+	if _current_state != GameState.VICTORY:
+		return
+	
+	advance_to_next_stage()
+
+
+## Handle shop button click (placeholder for future implementation)
+func _on_shop_button_pressed() -> void:
+	# TODO: Open shop scene in future update
+	print("商店功能暂未开放")
+
+
+## Handle retry button click from result panel
+func _on_retry_button_pressed() -> void:
+	# Hide result panel
+	_result_panel.visible = false
+	
+	# Re-setup current stage (retry)
+	if stage_config:
+		_plays_this_turn = 0
+		setup_stage(stage_config)
+	else:
+		if _stage_manager:
+			var current_stage: StageConfig = _stage_manager.load_current_stage()
+			if current_stage:
+				setup_stage(current_stage)
+
+
+## Show defeat screen with result panel
 func show_defeat() -> void:
 	_current_state = GameState.DEFEAT
 	
 	_result_panel.visible = true
 	_result_label.text = "失败！"
 	_result_label.add_theme_color_override("font_color", Color("#f87171"))
-	_final_score_label.text = "最终得分: %d / %d" % [_current_score, stage_config.get_target_score()]
 	
-	_status_label.text = "回合耗尽。点击重置重新挑战"
+	# Update score info
+	_score_info_label.text = "得分: %d / %d (回合耗尽)" % [
+		_current_score, stage_config.get_target_score()
+	]
+	
+	# No reward on defeat
+	_reward_info_label.text = "未获得奖励"
+	_gold_info_label.text = "当前金币: %d" % _player_gold
+	
+	# No next stage button on defeat
+	_next_stage_button.visible = false
+	_next_stage_button.disabled = true
+	
+	# Shop button disabled on defeat
+	_shop_button.disabled = true
+	
+	# Retry button available
+	_retry_button.disabled = false
+	_retry_button.text = "重新挑战"
 	
 	# Disable play and discard buttons
 	_play_button.disabled = true
 	_discard_button.disabled = true
+	
+	_status_label.text = "回合耗尽，请重新挑战"
 	
 	print("失败！得分: %d / 目标: %d" % [_current_score, stage_config.get_target_score()])
 
@@ -728,40 +804,37 @@ func _on_reset_button_pressed() -> void:
 	reset_stage()
 
 
-## Reset the current stage
+## Reset the current stage (only retry, not advance)
 func reset_stage() -> void:
 	# Hide result panel
 	_result_panel.visible = false
 	
-	# Check if we should advance to next stage
-	if _current_state == GameState.VICTORY and _stage_manager and _stage_manager.has_next_stage():
-		# Advance to next stage
-		advance_to_next_stage()
-		return
-	
-	# Re-setup with the same stage config (retry)
+	# Always retry current stage (not advance)
 	if stage_config:
-		# Reset plays counter for retry
 		_plays_this_turn = 0
 		setup_stage(stage_config)
 	else:
-		# Fallback to first stage
+		# Fallback to current stage from manager
 		if _stage_manager:
-			var first_stage: StageConfig = _stage_manager.load_stage_by_index(0)
-			if first_stage:
-				setup_stage(first_stage)
+			var current_stage: StageConfig = _stage_manager.load_current_stage()
+			if current_stage:
+				setup_stage(current_stage)
 
 
-## Advance to the next stage
+## Advance to the next stage (called from result panel button)
 func advance_to_next_stage() -> void:
 	if not _stage_manager or not _stage_manager.has_next_stage():
 		push_warning("没有下一关")
 		return
 	
-	# Complete current stage (already done in show_victory, but ensure it)
-	_stage_manager.complete_stage(_current_score, stage_config.get_reward())
+	# Hide result panel
+	_result_panel.visible = false
 	
-	# Load next stage
+	# Complete current stage in manager (already added gold in show_victory)
+	var reward: int = stage_config.get_reward()
+	_stage_manager.complete_stage(_current_score, reward)
+	
+	# Load and setup next stage
 	var next_stage: StageConfig = _stage_manager.load_current_stage()
 	if next_stage:
 		_plays_this_turn = 0
@@ -770,6 +843,11 @@ func advance_to_next_stage() -> void:
 	else:
 		push_error("无法加载下一关")
 		_status_label.text = "错误：无法加载下一关"
+
+
+## Check if all stages are completed (game victory)
+func is_game_completed() -> bool:
+	return _stage_manager and _stage_manager.is_completed()
 
 
 # ============================================================================
