@@ -2,7 +2,8 @@ class_name BattleController
 extends Node
 
 ## Battle scene controller - manages the complete battle flow.
-## Handles deck, hand, selection, play, scoring, and victory/defeat.
+## Handles deck, hand, selection, play, scoring, equipment effects, and victory/defeat.
+## Now integrated with the equipment system for rule rewriting.
 
 ## Game state enum
 enum GameState {
@@ -35,6 +36,18 @@ var _current_score: int = 0
 
 ## Remaining turns/rounds
 var _remaining_turns: int = 0
+
+## Player gold (for shop and resource effects)
+var _player_gold: int = 0
+
+## Current turn number (for effect timing)
+var _current_turn: int = 0
+
+## Equipment manager (handles backpack and equipped items)
+var _equipment_manager: EquipmentManager = null
+
+## Effect trigger system (handles equipment effect execution)
+var _effect_trigger: EffectTrigger = null
 
 ## Card display nodes currently in hand area
 var _hand_card_displays: Array[CardDisplay] = []
@@ -100,10 +113,15 @@ func setup_stage(config: StageConfig) -> void:
 	# Initialize game state
 	_current_score = 0
 	_remaining_turns = config.max_turns
+	_current_turn = 0
+	_player_gold = 0
 	
 	# Initialize deck
 	_deck = Deck.new()
 	_deck.shuffle()
+	
+	# Initialize equipment system
+	_initialize_equipment_system()
 	
 	# Clear existing hand and selection
 	_hand.clear()
@@ -116,6 +134,9 @@ func setup_stage(config: StageConfig) -> void:
 	# Draw initial hand
 	draw_initial_hand()
 	
+	# Trigger turn start effects
+	_trigger_turn_start_effects()
+	
 	# Update all UI displays
 	update_info_display()
 	update_selection_display()
@@ -126,6 +147,69 @@ func setup_stage(config: StageConfig) -> void:
 	_status_label.text = "选择卡牌出牌"
 	
 	print("Stage setup complete: %s" % config.display_name)
+
+
+## Initialize equipment system
+func _initialize_equipment_system() -> void:
+	# Create equipment manager
+	if _equipment_manager == null:
+		_equipment_manager = EquipmentManager.new()
+	
+	# Create effect trigger system
+	if _effect_trigger == null:
+		_effect_trigger = EffectTrigger.new(_equipment_manager)
+	else:
+		_effect_trigger.set_equipment_manager(_equipment_manager)
+	
+	# Connect to effect triggers for UI updates
+	_effect_trigger.effect_triggered.connect(_on_effect_triggered)
+	_effect_trigger.rules_updated.connect(_on_rules_updated)
+	
+	# Clear existing equipment (fresh start)
+	_equipment_manager.clear()
+	
+	# Add test equipment for demonstration (in real game, loaded from save/shop)
+	_add_test_equipment()
+	
+	print("Equipment system initialized")
+
+
+## Add test equipment for demonstration
+func _add_test_equipment() -> void:
+	# Load the perfect_lens equipment (4-card straight rule)
+	var perfect_lens: EquipmentData = load("res://resources/equipment/perfect_lens.tres") as EquipmentData
+	if perfect_lens:
+		_equipment_manager.add_to_inventory(perfect_lens)
+		# Auto-equip for testing
+		_equipment_manager.place_equipment(perfect_lens, Vector2i(0, 0))
+		print("Added test equipment: %s" % perfect_lens.display_name)
+
+
+## Handle effect triggered signal
+func _on_effect_triggered(result: EffectTrigger.EffectResult) -> void:
+	if result.message:
+		print("Effect triggered: %s from %s" % [result.message, result.source.display_name])
+		_status_label.text = result.message
+
+
+## Handle rules updated signal
+func _on_rules_updated() -> void:
+	# Update selection display to reflect new rules
+	update_selection_display()
+	print("Rules updated")
+
+
+## Trigger turn start effects
+func _trigger_turn_start_effects() -> void:
+	if _effect_trigger:
+		var results: Array[EffectTrigger.EffectResult] = _effect_trigger.trigger_turn_start(
+			_current_turn, _player_gold
+		)
+		
+		# Process effect results
+		for result: EffectTrigger.EffectResult in results:
+			if result.gold_change != 0:
+				_player_gold += result.gold_change
 
 
 ## Draw the initial hand (8 cards by default)
@@ -233,11 +317,17 @@ func update_selection_display() -> void:
 		_selected_cards_container.add_child(card_display)
 		_play_card_displays.append(card_display)
 	
-	# Evaluate hand type
-	var hand_result: HandType.HandResult = HandClassifier.evaluate(_selected_cards)
+	# Evaluate hand type with rule modifier
+	var rule_modifier: RuleModifier = null
+	if _effect_trigger:
+		rule_modifier = _effect_trigger.get_rule_modifier()
 	
-	# Calculate score
-	var score: int = ScoreCalculator.calculate_score(hand_result, stage_config.blind_type)
+	var hand_result: HandType.HandResult = HandClassifier.evaluate_with_modifiers(
+		_selected_cards, rule_modifier
+	)
+	
+	# Calculate score with equipment modifiers
+	var score: int = _calculate_score_with_equipment(hand_result)
 	
 	# Update labels
 	if hand_result.is_valid:
@@ -248,6 +338,22 @@ func update_selection_display() -> void:
 		_score_preview_label.text = "预计得分: %d" % score
 	
 	_status_label.text = "%s - %d 分" % [hand_result.get_display_name_cn(), score]
+
+
+## Calculate score with equipment modifiers
+func _calculate_score_with_equipment(hand_result: HandType.HandResult) -> int:
+	if not hand_result.is_valid:
+		return 0
+	
+	# Get score modifiers from effect trigger
+	var modifiers: Dictionary = {}
+	if _effect_trigger:
+		modifiers = _effect_trigger.get_score_modifiers()
+	
+	# Use ScoreCalculator with modifiers
+	return ScoreCalculator.calculate_score_with_modifiers(
+		hand_result, stage_config.blind_type, modifiers
+	)
 
 
 ## Update the info panel display
@@ -293,17 +399,30 @@ func _on_play_button_pressed() -> void:
 
 ## Play the selected cards
 func play_cards() -> void:
-	# Evaluate hand type
-	var hand_result: HandType.HandResult = HandClassifier.evaluate(_selected_cards)
+	# Evaluate hand type with rule modifier
+	var rule_modifier: RuleModifier = null
+	if _effect_trigger:
+		rule_modifier = _effect_trigger.get_rule_modifier()
 	
-	# Calculate score
-	var score: int = ScoreCalculator.calculate_score(hand_result, stage_config.blind_type)
+	var hand_result: HandType.HandResult = HandClassifier.evaluate_with_modifiers(
+		_selected_cards, rule_modifier
+	)
+	
+	# Trigger play effects
+	_trigger_play_effects(_selected_cards)
+	
+	# Calculate score with equipment modifiers
+	var score: int = _calculate_score_with_equipment(hand_result)
+	
+	# Trigger score effects
+	_trigger_score_effects(hand_result, score)
 	
 	# Update cumulative score
 	_current_score += score
 	
 	# Decrease turns
 	_remaining_turns -= 1
+	_current_turn += 1
 	
 	# Print play result
 	print("Played %s for %d points (total: %d/%d)" % [
@@ -322,6 +441,9 @@ func play_cards() -> void:
 	var cards_played: int = stage_config.max_selection_size  # Rough estimate
 	draw_cards_to_fill(cards_played)
 	
+	# Trigger turn end effects
+	_trigger_turn_end_effects()
+	
 	# Update displays
 	update_info_display()
 	update_selection_display()
@@ -330,6 +452,37 @@ func play_cards() -> void:
 	
 	# Check victory/defeat
 	check_game_result()
+
+
+## Trigger play effects
+func _trigger_play_effects(cards: Array[CardData]) -> void:
+	if _effect_trigger:
+		var results: Array[EffectTrigger.EffectResult] = _effect_trigger.trigger_play_effects(cards)
+		for result: EffectTrigger.EffectResult in results:
+			if result.message:
+				print("Play effect: %s" % result.message)
+
+
+## Trigger score effects
+func _trigger_score_effects(hand_result: HandType.HandResult, score: int) -> void:
+	if _effect_trigger:
+		var results: Array[EffectTrigger.EffectResult] = _effect_trigger.trigger_score_effects(
+			hand_result, score, stage_config.blind_type
+		)
+		for result: EffectTrigger.EffectResult in results:
+			if result.message:
+				print("Score effect: %s" % result.message)
+
+
+## Trigger turn end effects
+func _trigger_turn_end_effects() -> void:
+	if _effect_trigger:
+		var results: Array[EffectTrigger.EffectResult] = _effect_trigger.trigger_turn_end(
+			_current_turn, _player_gold
+		)
+		for result: EffectTrigger.EffectResult in results:
+			if result.gold_change != 0:
+				_player_gold += result.gold_change
 
 
 ## Handle discard button click
@@ -435,3 +588,72 @@ func reset_stage() -> void:
 		var default_stage: StageConfig = load("res://resources/stages/stage_1.tres") as StageConfig
 		if default_stage:
 			setup_stage(default_stage)
+
+
+# ============================================================================
+# Equipment System Public Methods
+# ============================================================================
+
+## Get the equipment manager
+func get_equipment_manager() -> EquipmentManager:
+	return _equipment_manager
+
+
+## Get the effect trigger system
+func get_effect_trigger() -> EffectTrigger:
+	return _effect_trigger
+
+
+## Get the current rule modifier
+func get_rule_modifier() -> RuleModifier:
+	if _effect_trigger:
+		return _effect_trigger.get_rule_modifier()
+	return null
+
+
+## Get player gold
+func get_player_gold() -> int:
+	return _player_gold
+
+
+## Add gold to player
+func add_gold(amount: int) -> void:
+	_player_gold += amount
+
+
+## Get active rules summary
+func get_rules_summary() -> String:
+	if _effect_trigger:
+		return _effect_trigger.get_rules_summary()
+	return "无规则改写"
+
+
+## Check if any rules are active
+func has_active_rules() -> bool:
+	if _effect_trigger:
+		return _effect_trigger.has_active_rules()
+	return false
+
+
+## Get equipped items count
+func get_equipped_count() -> int:
+	if _equipment_manager:
+		return _equipment_manager.get_equipped().size()
+	return 0
+
+
+## Add equipment from external source (e.g., shop)
+func add_equipment_to_inventory(equipment: EquipmentData) -> bool:
+	if not _equipment_manager or not equipment:
+		return false
+	
+	_equipment_manager.add_to_inventory(equipment)
+	return true
+
+
+## Place equipment in backpack
+func place_equipment(equipment: EquipmentData, position: Vector2i) -> bool:
+	if not _equipment_manager:
+		return false
+	
+	return _equipment_manager.place_equipment(equipment, position)

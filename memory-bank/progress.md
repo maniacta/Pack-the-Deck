@@ -6,13 +6,66 @@
 
 ## 当前状态
 
-**当前阶段**: 阶段四-战斗场景（UI与交互）- ✅ 完成
+**当前阶段**: 阶段五-基础装备系统 - ✅ 完成
 
-**下一阶段**: 阶段五（基础装备系统）
+**下一阶段**: 阶段六（战斗循环完整流程）
 
 ---
 
 ## 完成记录
+
+### 2026-04-15 - 阶段五：基础装备系统（规则改写核心）
+
+#### 步骤 5.1：实现规则改写器 ✅
+- [x] 创建 RuleModifier 类 (scripts/systems/rule_modifier.gd)
+- [x] 定义改写类型枚举（STRAIGHT_MIN_CARDS, FLUSH_MIN_CARDS, HAND_TYPE_MULTIPLIER等）
+- [x] 实现 RuleEntry 内嵌类（改写条目结构）
+- [x] 实现规则栈叠加机制（按优先级应用）
+- [x] 实现从装备解析规则参数
+
+#### 步骤 5.2：修改牌型判断支持规则改写 ✅
+- [x] 更新 HandClassifier 添加 evaluate_with_modifiers 方法
+- [x] 实现 _check_straight_with_min（支持自定义最少牌数）
+- [x] 实现 _check_flush_with_min（支持自定义最少牌数）
+- [x] 实现 _check_straight_flush_with_min（支持规则改写）
+- [x] 实现倍率修改应用到 HandResult
+
+#### 步骤 5.3：实现效果触发系统 ✅
+- [x] 创建 EffectTrigger 类 (scripts/systems/effect_trigger.gd)
+- [x] 定义触发时机枚举（ON_TURN_START, ON_TURN_END, ON_PLAY, ON_SCORE等）
+- [x] 实现 EffectContext 内嵌类（触发上下文）
+- [x] 实现 EffectResult 内嵌类（效果结果）
+- [x] 实现 trigger_effects 统一入口
+- [x] 实现 trigger_turn_start/turn_end/play/score_effects 方法
+- [x] 实现 get_score_modifiers 方法
+
+#### 步骤 5.4：集成装备系统到战斗流程 ✅
+- [x] 更新 BattleController 添加 EquipmentManager 和 EffectTrigger
+- [x] 实现 _initialize_equipment_system 方法
+- [x] 实现 _trigger_turn_start/turn_end/play/score_effects 方法
+- [x] 修改 update_selection_display 使用 RuleModifier
+- [x] 修改 play_cards 使用规则改写和效果触发
+- [x] 添加装备系统公共方法（get_equipment_manager, get_rule_modifier等）
+
+#### 步骤 5.5：创建测试装备资源 ✅
+- [x] 创建 pair_booster.tres（对子倍率×2装备）
+- [x] 验证 perfect_lens.tres（顺子4张装备）
+
+#### 步骤 5.6：创建测试文件 ✅
+- [x] 创建 test_rule_modifier.gd（规则改写测试）
+- [x] 测试 RuleModifier 创建和默认值
+- [x] 测试顺子最少牌数修改
+- [x] 测试牌型倍率修改
+- [x] 测试装备集成
+- [x] 测试4张牌顺子识别
+- [x] 测试 EffectTrigger 系统
+- [x] 更新 main.gd 添加新测试
+
+#### 文档更新 ✅
+- [x] 更新 architecture.md - 记录规则改写系统和效果触发系统结构
+- [x] 更新 progress.md - 本文件
+
+---
 
 ### 2026-04-14 - 阶段四-战斗场景：UI与交互系统
 
@@ -176,17 +229,29 @@
 
 ## 待办事项
 
-### 阶段五：基础装备系统（下一步）
-- [ ] 步骤 5.1：实现装备槽位概念
-- [ ] 步骤 5.2：实现背包网格系统
-- [ ] 步骤 5.3：实现装备形状系统
-- [ ] 步骤 5.4：实现装备效果触发
-- [ ] 步骤 5.5：实现规则改写效果（核心）
-- [ ] 步骤 5.6：实现装备冲突机制
+### 阶段六：战斗循环完整流程（下一步）
+- [ ] 步骤 6.1：实现关卡配置扩展
+- [ ] 步骤 6.2：实现关卡流程管理
+- [ ] 步骤 6.3：实现回合开始/结束效果完善
+- [ ] 步骤 6.4：实现完整出牌流程验证
+- [ ] 步骤 6.5：实现游戏结果判定完善
 
 ---
 
 ## 设计决策记录
+
+### 2026-04-15 - 阶段五设计决策
+
+| 决策项 | 结论 |
+|--------|------|
+| 规则改写实现 | 规则栈叠加 - 按优先级依次应用 |
+| 顺子最少牌数 | 默认5张，可通过装备改为4张 |
+| 同花最少牌数 | 默认5张，可扩展支持装备修改 |
+| 倍率修改方式 | 基础倍率 × 修改系数 |
+| 效果触发时机 | 回合开始、回合结束、出牌、得分 |
+| 装备系统集成 | BattleController 持有 EquipmentManager 和 EffectTrigger |
+
+---
 
 ### 2025-03-26 - 初始设计决策
 
@@ -262,5 +327,5 @@
 
 ---
 
-**文档版本**: v1.4  
-**最后更新**: 2026-04-14
+**文档版本**: v1.5  
+**最后更新**: 2026-04-15

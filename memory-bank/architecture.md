@@ -409,10 +409,75 @@ MVP 阶段：同类装备不能同时装备。
 - [x] 战斗场景 (scenes/battle.tscn) ✅
 - [x] 卡牌显示组件 (scripts/ui/card_display.gd) ✅
 - [x] 战斗控制器 (scripts/battle_controller.gd) ✅
+- [x] 规则改写系统 (scripts/systems/rule_modifier.gd) ✅
+- [x] 效果触发系统 (scripts/systems/effect_trigger.gd) ✅
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
 - [ ] 商店系统 (scripts/systems/shop_manager.gd)
 - [ ] 游戏状态机 (scripts/systems/game_manager.gd)
+
+---
+
+## 规则改写系统 (scripts/systems/)
+
+### rule_modifier.gd
+**类型**: `class_name RuleModifier extends RefCounted`
+
+**职责**: 规则改写器，装备改变游戏规则的核心系统
+
+**主要枚举**:
+- `ModifyType` - 改写类型（STRAIGHT_MIN_CARDS, FLUSH_MIN_CARDS, HAND_TYPE_MULTIPLIER等）
+
+**主要属性**:
+- `_rules: Array[RuleEntry]` - 规则条目列表
+- `_cached_straight_min: int` - 缓存的顺子最小牌数
+- `_cached_flush_min: int` - 缓存的同花最小牌数
+- `_cached_multipliers: Dictionary` - 缓存的牌型倍率
+
+**主要方法**:
+- `add_rule(entry: RuleEntry)` - 添加规则条目
+- `add_equipment_rules(equipment: EquipmentData)` - 从装备添加规则
+- `remove_equipment_rules(equipment: EquipmentData)` - 移除装备规则
+- `clear_rules()` - 清除所有规则
+- `get_straight_min_cards()` - 获取顺子最小牌数
+- `get_flush_min_cards()` - 获取同花最小牌数
+- `get_hand_type_multiplier(hand_type)` - 获取牌型倍率
+- `is_hand_type_enabled(hand_type)` - 检查牌型是否启用
+
+**内嵌类 RuleEntry**:
+- `modify_type: ModifyType` - 改写类型
+- `value: Variant` - 改写值
+- `priority: int` - 优先级（越高越后应用）
+- `source: EquipmentData` - 来源装备
+
+---
+
+### effect_trigger.gd
+**类型**: `class_name EffectTrigger extends RefCounted`
+
+**职责**: 装备效果触发系统，在正确时机触发装备效果
+
+**主要枚举**:
+- `Timing` - 触发时机（ON_TURN_START, ON_TURN_END, ON_PLAY, ON_SCORE等）
+
+**主要属性**:
+- `_equipment_manager: EquipmentManager` - 装备管理器引用
+- `_rule_modifier: RuleModifier` - 规则改写器
+
+**主要方法**:
+- `trigger_effects(timing: Timing, context: EffectContext)` - 触发指定时机效果
+- `trigger_turn_start(turn_number, player_gold)` - 触发回合开始效果
+- `trigger_turn_end(turn_number, player_gold)` - 触发回合结束效果
+- `trigger_play_effects(played_cards)` - 触发出牌效果
+- `trigger_score_effects(hand_result, score, blind_type)` - 触发得分效果
+- `get_rule_modifier()` - 获取规则改写器
+- `get_score_modifiers()` - 获取得分修正器
+
+**内嵌类 EffectContext**:
+- 触发上下文信息（时机、卡牌、得分、金币等）
+
+**内嵌类 EffectResult**:
+- 效果执行结果（成功与否、得分加成、倍率加成、金币变化等）
 
 ---
 
@@ -566,12 +631,12 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
-**文档版本**: v1.4  
-**最后更新**: 2026-04-14  
-**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）  
+**文档版本**: v1.5  
+**最后更新**: 2026-04-15  
+**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）、阶段五（基础装备系统）  
 **新增文件**: 
-- scripts/ui/card_display.gd（卡牌显示组件）
-- scripts/battle_controller.gd（战斗控制器）
-- scenes/card_display.tscn（卡牌场景）
-- scenes/battle.tscn（战斗场景）
-- scenes/main.tscn（更新主场景）
+- scripts/systems/rule_modifier.gd（规则改写器）
+- scripts/systems/effect_trigger.gd（效果触发系统）
+- scripts/battle_controller.gd（更新战斗控制器集成装备系统）
+- resources/equipment/pair_booster.tres（对子倍率加成装备）
+- tests/test_rule_modifier.gd（规则改写测试）
