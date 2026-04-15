@@ -103,16 +103,16 @@ func get_full_description() -> String:
 ## Validate that this stage config is properly configured
 func is_valid() -> bool:
 	if base_target_score <= 0:
-		push_error("StageConfig: base_target_score must be positive")
+		push_error("StageConfig: base_target_score 必须为正数")
 		return false
 	
 	if max_turns <= 0:
-		push_error("StageConfig: max_turns must be positive")
+		push_error("StageConfig: max_turns 必须为正数")
 		return false
 	
 	if blind_type == BlindType.Type.BOSS_BLIND and boss_rule == BossRule.NONE:
 		# Boss blind without special rule is valid, but warn
-		push_warning("StageConfig: Boss blind has no special rule defined")
+		push_warning("StageConfig: Boss 盲注未定义特殊规则")
 	
 	return true
 

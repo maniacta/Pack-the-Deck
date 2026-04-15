@@ -35,7 +35,7 @@ var _equipment_positions: Dictionary = {}
 ## Add equipment to inventory
 func add_to_inventory(equipment: EquipmentData) -> void:
 	if equipment == null:
-		push_error("Cannot add null equipment to inventory")
+		push_error("无法将空装备添加到物品栏")
 		return
 	
 	_inventory.append(equipment)
@@ -46,7 +46,7 @@ func add_to_inventory(equipment: EquipmentData) -> void:
 func remove_from_inventory(equipment: EquipmentData) -> bool:
 	var index := _inventory.find(equipment)
 	if index < 0:
-		push_warning("Equipment not found in inventory")
+		push_warning("物品栏中未找到该装备")
 		return false
 	
 	_inventory.remove_at(index)
@@ -61,12 +61,12 @@ func can_place(equipment: EquipmentData, anchor: Vector2i) -> bool:
 	
 	# Check if already equipped
 	if _equipment_positions.has(equipment):
-		push_warning("Equipment is already equipped")
+		push_warning("装备已处于装备状态")
 		return false
 	
 	# Check category conflicts
 	if _has_category_conflict(equipment):
-		push_warning("Category conflict: %s equipment already equipped" % equipment.get_category_name())
+		push_warning("类别冲突：%s 装备已装备" % equipment.get_category_name())
 		return false
 	
 	# Check grid boundaries and occupancy
@@ -106,7 +106,7 @@ func place_equipment(equipment: EquipmentData, anchor: Vector2i) -> bool:
 ## Remove equipment from backpack
 func unequip(equipment: EquipmentData) -> bool:
 	if not _equipment_positions.has(equipment):
-		push_warning("Equipment is not equipped")
+		push_warning("装备未处于装备状态")
 		return false
 	
 	# Remove from grid

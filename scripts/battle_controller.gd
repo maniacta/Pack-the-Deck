@@ -56,31 +56,31 @@ var _hand_card_displays: Array[CardDisplay] = []
 var _play_card_displays: Array[CardDisplay] = []
 
 # UI Node references
-@onready var _info_panel: HBoxContainer = $BattleUI/InfoPanel
-@onready var _stage_label: Label = $BattleUI/InfoPanel/StageLabel
-@onready var _target_score_label: Label = $BattleUI/InfoPanel/TargetScoreLabel
-@onready var _current_score_label: Label = $BattleUI/InfoPanel/CurrentScoreLabel
-@onready var _remaining_turns_label: Label = $BattleUI/InfoPanel/RemainingTurnsLabel
-@onready var _blind_type_label: Label = $BattleUI/InfoPanel/BlindTypeLabel
+@onready var _info_panel: HBoxContainer = $"../BattleUI/InfoPanel"
+@onready var _stage_label: Label = $"../BattleUI/InfoPanel/StageLabel"
+@onready var _target_score_label: Label = $"../BattleUI/InfoPanel/TargetScoreLabel"
+@onready var _current_score_label: Label = $"../BattleUI/InfoPanel/CurrentScoreLabel"
+@onready var _remaining_turns_label: Label = $"../BattleUI/InfoPanel/RemainingTurnsLabel"
+@onready var _blind_type_label: Label = $"../BattleUI/InfoPanel/BlindTypeLabel"
 
-@onready var _game_area: VBoxContainer = $BattleUI/GameArea
-@onready var _play_zone: Panel = $BattleUI/GameArea/PlayZone
-@onready var _selected_cards_container: HBoxContainer = $BattleUI/GameArea/PlayZone/SelectedCardsContainer
-@onready var _hand_type_label: Label = $BattleUI/GameArea/PlayZone/HandTypeLabel
-@onready var _score_preview_label: Label = $BattleUI/GameArea/PlayZone/ScorePreviewLabel
+@onready var _game_area: VBoxContainer = $"../BattleUI/GameArea"
+@onready var _play_zone: Panel = $"../BattleUI/GameArea/PlayZone"
+@onready var _selected_cards_container: HBoxContainer = $"../BattleUI/GameArea/PlayZone/SelectedCardsContainer"
+@onready var _hand_type_label: Label = $"../BattleUI/GameArea/PlayZone/HandTypeLabel"
+@onready var _score_preview_label: Label = $"../BattleUI/GameArea/PlayZone/ScorePreviewLabel"
 
-@onready var _hand_area: ScrollContainer = $BattleUI/GameArea/HandArea
-@onready var _hand_container: HBoxContainer = $BattleUI/GameArea/HandArea/HandContainer
+@onready var _hand_area: ScrollContainer = $"../BattleUI/GameArea/HandArea"
+@onready var _hand_container: HBoxContainer = $"../BattleUI/GameArea/HandArea/HandContainer"
 
-@onready var _action_bar: HBoxContainer = $BattleUI/ActionBar
-@onready var _play_button: Button = $BattleUI/ActionBar/PlayButton
-@onready var _discard_button: Button = $BattleUI/ActionBar/DiscardButton
-@onready var _reset_button: Button = $BattleUI/ActionBar/ResetButton
-@onready var _status_label: Label = $BattleUI/ActionBar/StatusLabel
+@onready var _action_bar: HBoxContainer = $"../BattleUI/ActionBar"
+@onready var _play_button: Button = $"../BattleUI/ActionBar/PlayButton"
+@onready var _discard_button: Button = $"../BattleUI/ActionBar/DiscardButton"
+@onready var _reset_button: Button = $"../BattleUI/ActionBar/ResetButton"
+@onready var _status_label: Label = $"../BattleUI/ActionBar/StatusLabel"
 
-@onready var _result_panel: Panel = $BattleUI/ResultPanel
-@onready var _result_label: Label = $BattleUI/ResultPanel/ResultLabel
-@onready var _final_score_label: Label = $BattleUI/ResultPanel/FinalScoreLabel
+@onready var _result_panel: Panel = $"../BattleUI/ResultPanel"
+@onready var _result_label: Label = $"../BattleUI/ResultPanel/ResultLabel"
+@onready var _final_score_label: Label = $"../BattleUI/ResultPanel/FinalScoreLabel"
 
 
 func _ready() -> void:
@@ -93,18 +93,41 @@ func _ready() -> void:
 	_result_panel.visible = false
 	
 	# Load default stage (stage_1)
-	var default_stage: StageConfig = load("res://resources/stages/stage_1.tres") as StageConfig
+	var default_stage: StageConfig = _load_or_create_default_stage()
 	if default_stage:
 		setup_stage(default_stage)
 	else:
-		push_error("Failed to load default stage")
+		push_error("无法加载默认关卡")
 		_status_label.text = "错误：无法加载关卡"
+
+
+## Load stage from resource or create default programmatically
+func _load_or_create_default_stage() -> StageConfig:
+	# Try loading from resource file first
+	var loaded: Resource = load("res://resources/stages/stage_1.tres")
+	if loaded and loaded is StageConfig:
+		return loaded as StageConfig
+	
+	# Fallback: create default stage programmatically
+	push_warning("无法加载 stage_1.tres，正在程序化创建默认关卡")
+	var stage := StageConfig.new()
+	stage.stage_id = "stage_1"
+	stage.display_name = "第一关 - 入门"
+	stage.base_target_score = 100
+	stage.max_turns = 3
+	stage.blind_type = BlindType.Type.SMALL_BLIND
+	stage.boss_rule = StageConfig.BossRule.NONE
+	stage.base_reward = 10
+	stage.initial_hand_size = 8
+	stage.max_hand_size = 8
+	stage.max_selection_size = 5
+	return stage
 
 
 ## Setup the battle with a stage configuration
 func setup_stage(config: StageConfig) -> void:
 	if not config or not config.is_valid():
-		push_error("Invalid stage configuration")
+		push_error("无效的关卡配置")
 		return
 	
 	stage_config = config
@@ -146,7 +169,7 @@ func setup_stage(config: StageConfig) -> void:
 	_current_state = GameState.PLAYER_TURN
 	_status_label.text = "选择卡牌出牌"
 	
-	print("Stage setup complete: %s" % config.display_name)
+	print("关卡设置完成: %s" % config.display_name)
 
 
 ## Initialize equipment system
@@ -156,14 +179,16 @@ func _initialize_equipment_system() -> void:
 		_equipment_manager = EquipmentManager.new()
 	
 	# Create effect trigger system
-	if _effect_trigger == null:
+	var is_new_trigger: bool = _effect_trigger == null
+	if is_new_trigger:
 		_effect_trigger = EffectTrigger.new(_equipment_manager)
 	else:
 		_effect_trigger.set_equipment_manager(_equipment_manager)
 	
-	# Connect to effect triggers for UI updates
-	_effect_trigger.effect_triggered.connect(_on_effect_triggered)
-	_effect_trigger.rules_updated.connect(_on_rules_updated)
+	# Connect to effect triggers for UI updates (only for new instances)
+	if is_new_trigger:
+		_effect_trigger.effect_triggered.connect(_on_effect_triggered)
+		_effect_trigger.rules_updated.connect(_on_rules_updated)
 	
 	# Clear existing equipment (fresh start)
 	_equipment_manager.clear()
@@ -171,7 +196,7 @@ func _initialize_equipment_system() -> void:
 	# Add test equipment for demonstration (in real game, loaded from save/shop)
 	_add_test_equipment()
 	
-	print("Equipment system initialized")
+	print("装备系统初始化完成")
 
 
 ## Add test equipment for demonstration
@@ -182,13 +207,13 @@ func _add_test_equipment() -> void:
 		_equipment_manager.add_to_inventory(perfect_lens)
 		# Auto-equip for testing
 		_equipment_manager.place_equipment(perfect_lens, Vector2i(0, 0))
-		print("Added test equipment: %s" % perfect_lens.display_name)
+		print("添加测试装备: %s" % perfect_lens.display_name)
 
 
 ## Handle effect triggered signal
 func _on_effect_triggered(result: EffectTrigger.EffectResult) -> void:
 	if result.message:
-		print("Effect triggered: %s from %s" % [result.message, result.source.display_name])
+		print("效果触发: %s 来自 %s" % [result.message, result.source.display_name])
 		_status_label.text = result.message
 
 
@@ -196,7 +221,7 @@ func _on_effect_triggered(result: EffectTrigger.EffectResult) -> void:
 func _on_rules_updated() -> void:
 	# Update selection display to reflect new rules
 	update_selection_display()
-	print("Rules updated")
+	print("规则已更新")
 
 
 ## Trigger turn start effects
@@ -217,20 +242,20 @@ func draw_initial_hand() -> void:
 	var initial_count: int = stage_config.initial_hand_size
 	_hand = _deck.draw_cards(initial_count)
 	update_hand_display()
-	print("Drawn initial hand: %d cards" % _hand.size())
+	print("抽取初始手牌: %d 张" % _hand.size())
 
 
 ## Draw additional cards to fill hand
 func draw_cards_to_fill(count: int) -> void:
 	if _deck.is_empty():
-		push_warning("Deck is empty, cannot draw more cards")
+		push_warning("牌堆已空，无法抽取更多卡牌")
 		return
 	
 	var cards_to_draw: int = min(count, _deck.get_remaining_count())
 	var new_cards: Array[CardData] = _deck.draw_cards(cards_to_draw)
 	_hand.append_array(new_cards)
 	update_hand_display()
-	print("Drawn %d new cards, hand size: %d" % [cards_to_draw, _hand.size()])
+	print("抽取 %d 张新牌，手牌数量: %d" % [cards_to_draw, _hand.size()])
 
 
 ## Update the hand display area
@@ -372,13 +397,13 @@ func update_info_display() -> void:
 func update_button_states() -> void:
 	# Play button: enabled when 1-5 cards selected and in PLAYER_TURN state
 	var can_play: bool = _current_state == GameState.PLAYER_TURN and \
-	                     not _selected_cards.is_empty() and \
-	                     _selected_cards.size() <= stage_config.max_selection_size
+						 not _selected_cards.is_empty() and \
+						 _selected_cards.size() <= stage_config.max_selection_size
 	_play_button.disabled = not can_play
 	
 	# Discard button: enabled when cards selected and in PLAYER_TURN state
 	var can_discard: bool = _current_state == GameState.PLAYER_TURN and \
-	                        not _selected_cards.is_empty()
+							not _selected_cards.is_empty()
 	_discard_button.disabled = not can_discard
 	
 	# Reset button: always enabled (for retry)
@@ -425,7 +450,7 @@ func play_cards() -> void:
 	_current_turn += 1
 	
 	# Print play result
-	print("Played %s for %d points (total: %d/%d)" % [
+	print("出牌 %s 得分 %d (总分: %d/%d)" % [
 		hand_result.get_display_name_cn(), score, _current_score, stage_config.get_target_score()
 	])
 	
@@ -460,7 +485,7 @@ func _trigger_play_effects(cards: Array[CardData]) -> void:
 		var results: Array[EffectTrigger.EffectResult] = _effect_trigger.trigger_play_effects(cards)
 		for result: EffectTrigger.EffectResult in results:
 			if result.message:
-				print("Play effect: %s" % result.message)
+				print("出牌效果: %s" % result.message)
 
 
 ## Trigger score effects
@@ -471,7 +496,7 @@ func _trigger_score_effects(hand_result: HandType.HandResult, score: int) -> voi
 		)
 		for result: EffectTrigger.EffectResult in results:
 			if result.message:
-				print("Score effect: %s" % result.message)
+				print("得分效果: %s" % result.message)
 
 
 ## Trigger turn end effects
@@ -499,7 +524,7 @@ func _on_discard_button_pressed() -> void:
 
 ## Discard selected cards without scoring
 func discard_cards() -> void:
-	print("Discarded %d cards" % _selected_cards.size())
+	print("弃牌 %d 张" % _selected_cards.size())
 	
 	# Remove cards from hand and add to discard pile
 	for card: CardData in _selected_cards:
@@ -550,7 +575,7 @@ func show_victory() -> void:
 	_play_button.disabled = true
 	_discard_button.disabled = true
 	
-	print("VICTORY! Score: %d / Target: %d" % [_current_score, stage_config.get_target_score()])
+	print("胜利！得分: %d / 目标: %d" % [_current_score, stage_config.get_target_score()])
 
 
 ## Show defeat screen
@@ -568,7 +593,7 @@ func show_defeat() -> void:
 	_play_button.disabled = true
 	_discard_button.disabled = true
 	
-	print("DEFEAT! Score: %d / Target: %d" % [_current_score, stage_config.get_target_score()])
+	print("失败！得分: %d / 目标: %d" % [_current_score, stage_config.get_target_score()])
 
 
 ## Handle reset button click

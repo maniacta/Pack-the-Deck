@@ -40,7 +40,7 @@ func _initialize_standard_deck() -> void:
 			card.suit = suit
 			_cards.append(card)
 	
-	print("Deck initialized with %d cards" % _cards.size())
+	print("牌堆初始化完成，共 %d 张牌" % _cards.size())
 
 
 ## Shuffle the deck randomly
@@ -54,7 +54,7 @@ func draw_card() -> CardData:
 	if _cards.is_empty():
 		# Try to reshuffle discard pile
 		if _discarded.is_empty():
-			push_warning("Cannot draw: deck and discard pile are empty")
+			push_warning("无法抽取：牌堆和弃牌堆都已空")
 			return null
 		_reshuffle_discard()
 	
@@ -94,7 +94,7 @@ func _reshuffle_discard() -> void:
 	_cards.append_array(_discarded)
 	_discarded.clear()
 	shuffle()
-	print("Discard pile reshuffled into deck (%d cards)" % _cards.size())
+	print("弃牌堆已重新洗入牌堆（%d 张牌）" % _cards.size())
 
 
 ## Get the number of cards remaining in the deck

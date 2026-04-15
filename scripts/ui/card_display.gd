@@ -73,7 +73,7 @@ func _update_display() -> void:
 	
 	# Update background color - create a new style to avoid affecting other cards
 	var bg_style: StyleBoxFlat = StyleBoxFlat.new()
-	bg_style.bg_color = is_red_suit ? COLOR_CARD_RED_SUIT : COLOR_CARD_BLACK_SUIT
+	bg_style.bg_color = COLOR_CARD_RED_SUIT if is_red_suit else COLOR_CARD_BLACK_SUIT
 	bg_style.border_width_left = 2
 	bg_style.border_width_top = 2
 	bg_style.border_width_right = 2
@@ -86,7 +86,7 @@ func _update_display() -> void:
 	_card_background.add_theme_stylebox_override("panel", bg_style)
 	
 	# Update text colors
-	var text_color: Color = is_red_suit ? COLOR_TEXT_RED_SUIT : COLOR_TEXT_BLACK_SUIT
+	var text_color: Color = COLOR_TEXT_RED_SUIT if is_red_suit else COLOR_TEXT_BLACK_SUIT
 	_rank_label.add_theme_color_override("font_color", text_color)
 	_suit_label.add_theme_color_override("font_color", text_color)
 

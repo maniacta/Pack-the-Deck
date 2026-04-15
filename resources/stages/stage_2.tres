@@ -1,6 +1,9 @@
-[gd_resource type="StageConfig" format=3 uid="uid://stage_002"]
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://stage_002"]
+
+[ext_resource type="Script" path="res://scripts/systems/stage_config.gd" id="1_stage_config"]
 
 [resource]
+script = ExtResource("1_stage_config")
 stage_id = "stage_2"
 display_name = "第二关 - 进阶"
 base_target_score = 300
