@@ -411,10 +411,80 @@ MVP 阶段：同类装备不能同时装备。
 - [x] 战斗控制器 (scripts/battle_controller.gd) ✅
 - [x] 规则改写系统 (scripts/systems/rule_modifier.gd) ✅
 - [x] 效果触发系统 (scripts/systems/effect_trigger.gd) ✅
+- [x] 关卡管理器 (scripts/systems/stage_manager.gd) ✅
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
 - [ ] 商店系统 (scripts/systems/shop_manager.gd)
 - [ ] 游戏状态机 (scripts/systems/game_manager.gd)
+
+---
+
+## 关卡管理系统 (scripts/systems/)
+
+### stage_manager.gd
+**类型**: `class_name StageManager extends RefCounted`
+
+**职责**: 管理多关卡进度、金币和装备的跨关卡持久化
+
+**主要枚举**:
+- `ProgressState` - 进度状态（NOT_STARTED, IN_PROGRESS, VICTORY, GAME_OVER）
+
+**主要属性**:
+- `_stage_list: Array[String]` - 关卡资源路径列表
+- `_current_stage_index: int` - 当前关卡索引
+- `_player_gold: int` - 累计金币
+- `_equipment_inventory: Array[EquipmentData]` - 装备库存
+- `_equipped_items: Array[EquipmentData]` - 已装备物品
+- `_stages_completed: int` - 完成关卡数
+- `_total_score: int` - 累计得分
+
+**主要方法**:
+- `start_game()` - 开始新游戏
+- `load_current_stage()` - 加载当前关卡配置
+- `complete_stage(score, reward)` - 完成当前关卡并获取下一关
+- `advance_to_next_stage()` - 进入下一关
+- `has_next_stage()` - 检查是否有下一关
+- `add_gold(amount)` - 添加金币
+- `spend_gold(amount)` - 消费金币
+- `add_equipment(equipment)` - 添加装备到库存
+- `equip_item(equipment)` - 装备物品
+- `unequip_item(equipment)` - 卸下装备
+- `reset_progress()` - 重置进度（保留金币和装备）
+- `full_reset()` - 完全重置
+
+**信号**:
+- `stage_changed(stage_config, stage_index)` - 关卡切换时发出
+- `gold_changed(new_gold)` - 金币变化时发出
+- `progress_completed()` - 完成所有关卡时发出
+- `game_over()` - 游戏结束时发出
+
+---
+
+## Boss 规则系统 (BattleController 集成)
+
+### Boss 规则类型 (StageConfig.BossRule)
+
+| 规则类型 | 描述 | 实现位置 |
+|---------|------|---------|
+| `SUIT_EXCLUDED` | 指定花色不计分 | `_calculate_score_excluding_suit()` |
+| `HAND_TYPE_EXCLUDED` | 指定牌型不计分 | `_check_boss_rule_invalid()` |
+| `PLAY_LIMIT` | 每回合出牌次数上限 | `_can_play_this_turn()` |
+| `CARD_LIMIT` | 手牌数量上限 | `_check_hand_size_limit()` |
+
+**Boss 规则参数格式**:
+```gdscript
+# SUIT_EXCLUDED
+boss_rule_param = {"suit": CardData.Suit.DIAMONDS, "suit_name": "方块"}
+
+# HAND_TYPE_EXCLUDED
+boss_rule_param = {"hand_type": HandType.Type.STRAIGHT, "hand_name": "顺子"}
+
+# PLAY_LIMIT
+boss_rule_param = {"limit": 3}
+
+# CARD_LIMIT
+boss_rule_param = {"limit": 5}
+```
 
 ---
 
@@ -631,12 +701,11 @@ MVP 阶段：同类装备不能同时装备。
 
 ---
 
-**文档版本**: v1.5  
+**文档版本**: v1.6  
 **最后更新**: 2026-04-15  
-**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）、阶段五（基础装备系统）  
+**已完成阶段**: 阶段一（项目骨架与数据结构）、阶段二（牌型判断系统）、阶段三（得分计算系统）、阶段四-战斗场景（UI与交互）、阶段五（基础装备系统）、阶段六（战斗循环完整流程）  
 **新增文件**: 
-- scripts/systems/rule_modifier.gd（规则改写器）
-- scripts/systems/effect_trigger.gd（效果触发系统）
-- scripts/battle_controller.gd（更新战斗控制器集成装备系统）
-- resources/equipment/pair_booster.tres（对子倍率加成装备）
-- tests/test_rule_modifier.gd（规则改写测试）
+- scripts/systems/stage_manager.gd（关卡管理器）
+- scripts/battle_controller.gd（更新：Boss 规则支持、StageManager 集成）
+- tests/test_stage_manager.gd（关卡管理测试）
+- tests/test_boss_rules.gd（Boss 规则测试）

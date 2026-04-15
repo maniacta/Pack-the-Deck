@@ -38,4 +38,6 @@ func _run_tests() -> void:
 	TestScoreCalculator.run_all_tests()
 	TestStageConfig.run_all_tests()
 	TestRuleModifier.run_all_tests()
+	TestStageManager.run_all_tests()
+	TestBossRules.run_all_tests()
 	print("========================================\n")

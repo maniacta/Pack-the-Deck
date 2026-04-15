@@ -43,11 +43,17 @@ var _player_gold: int = 0
 ## Current turn number (for effect timing)
 var _current_turn: int = 0
 
+## Plays made in current turn (for Boss PLAY_LIMIT rule)
+var _plays_this_turn: int = 0
+
 ## Equipment manager (handles backpack and equipped items)
 var _equipment_manager: EquipmentManager = null
 
 ## Effect trigger system (handles equipment effect execution)
 var _effect_trigger: EffectTrigger = null
+
+## Stage manager (handles multi-stage progression)
+var _stage_manager: StageManager = null
 
 ## Card display nodes currently in hand area
 var _hand_card_displays: Array[CardDisplay] = []
@@ -84,6 +90,9 @@ var _play_card_displays: Array[CardDisplay] = []
 
 
 func _ready() -> void:
+	# Initialize stage manager
+	_stage_manager = StageManager.new()
+	
 	# Initialize UI button connections
 	_play_button.pressed.connect(_on_play_button_pressed)
 	_discard_button.pressed.connect(_on_discard_button_pressed)
@@ -92,12 +101,12 @@ func _ready() -> void:
 	# Hide result panel initially
 	_result_panel.visible = false
 	
-	# Load default stage (stage_1)
-	var default_stage: StageConfig = _load_or_create_default_stage()
-	if default_stage:
-		setup_stage(default_stage)
+	# Start new game (load first stage)
+	var first_stage: StageConfig = _stage_manager.start_game()
+	if first_stage:
+		setup_stage(first_stage)
 	else:
-		push_error("无法加载默认关卡")
+		push_error("无法加载第一关")
 		_status_label.text = "错误：无法加载关卡"
 
 
@@ -137,6 +146,7 @@ func setup_stage(config: StageConfig) -> void:
 	_current_score = 0
 	_remaining_turns = config.max_turns
 	_current_turn = 0
+	_plays_this_turn = 0
 	_player_gold = 0
 	
 	# Initialize deck
@@ -167,7 +177,13 @@ func setup_stage(config: StageConfig) -> void:
 	
 	# Enter player turn state
 	_current_state = GameState.PLAYER_TURN
-	_status_label.text = "选择卡牌出牌"
+	
+	# Show initial status with gold and boss rule hint
+	var status_parts: Array[String] = []
+	if _stage_manager:
+		status_parts.append("金币: %d" % _stage_manager.get_player_gold())
+	status_parts.append("选择卡牌出牌")
+	_status_label.text = " | ".join(status_parts)
 	
 	print("关卡设置完成: %s" % config.display_name)
 
@@ -365,9 +381,13 @@ func update_selection_display() -> void:
 	_status_label.text = "%s - %d 分" % [hand_result.get_display_name_cn(), score]
 
 
-## Calculate score with equipment modifiers
+## Calculate score with equipment modifiers and boss rules
 func _calculate_score_with_equipment(hand_result: HandType.HandResult) -> int:
 	if not hand_result.is_valid:
+		return 0
+	
+	# Check boss rules first
+	if _check_boss_rule_invalid(hand_result):
 		return 0
 	
 	# Get score modifiers from effect trigger
@@ -375,10 +395,79 @@ func _calculate_score_with_equipment(hand_result: HandType.HandResult) -> int:
 	if _effect_trigger:
 		modifiers = _effect_trigger.get_score_modifiers()
 	
-	# Use ScoreCalculator with modifiers
-	return ScoreCalculator.calculate_score_with_modifiers(
-		hand_result, stage_config.blind_type, modifiers
-	)
+	# Calculate base score, applying suit exclusion if applicable
+	var adjusted_base_score: int = hand_result.base_score
+	if stage_config.has_boss_rule() and stage_config.boss_rule == StageConfig.BossRule.SUIT_EXCLUDED:
+		adjusted_base_score = _calculate_score_excluding_suit(hand_result)
+	
+	# Apply equipment score bonus (additive)
+	var score_bonus: int = modifiers.get("score_bonus", 0)
+	adjusted_base_score += score_bonus
+	
+	# Apply equipment multiplier bonus (multiplicative)
+	var multiplier_bonus: float = modifiers.get("multiplier_bonus", 1.0)
+	var adjusted_multiplier: int = int(hand_result.multiplier * multiplier_bonus)
+	
+	# Apply blind multiplier
+	var blind_multiplier: int = BlindType.get_target_multiplier(stage_config.blind_type)
+	
+	# Calculate final score: base × hand_mult × blind_mult
+	return adjusted_base_score * adjusted_multiplier * blind_multiplier
+
+
+## Check if boss rule invalidates this hand
+func _check_boss_rule_invalid(hand_result: HandType.HandResult) -> bool:
+	if not stage_config.has_boss_rule():
+		return false
+	
+	match stage_config.boss_rule:
+		StageConfig.BossRule.HAND_TYPE_EXCLUDED:
+			var excluded_type: int = stage_config.boss_rule_param.get("hand_type", HandType.Type.HIGH_CARD)
+			if hand_result.hand_type == excluded_type:
+				_status_label.text = "Boss 规则: %s 不计分" % HandType.get_display_name_cn(excluded_type)
+				return true
+	
+	return false
+
+
+## Calculate base score excluding a specific suit (for SUIT_EXCLUDED boss rule)
+func _calculate_score_excluding_suit(hand_result: HandType.HandResult) -> int:
+	var excluded_suit: int = stage_config.boss_rule_param.get("suit", CardData.Suit.DIAMONDS)
+	var score: int = 0
+	
+	for card: CardData in hand_result.cards:
+		if card.suit != excluded_suit:
+			score += card.get_base_score()
+	
+	return score
+
+
+## Check if player can play cards this turn (for PLAY_LIMIT boss rule)
+func _can_play_this_turn() -> bool:
+	if not stage_config.has_boss_rule():
+		return true
+	
+	if stage_config.boss_rule == StageConfig.BossRule.PLAY_LIMIT:
+		var limit: int = stage_config.boss_rule_param.get("limit", 3)
+		if _plays_this_turn >= limit:
+			_status_label.text = "Boss 规则: 本回合已出牌 %d 次（上限 %d）" % [_plays_this_turn, limit]
+			return false
+	
+	return true
+
+
+## Check hand size limit (for CARD_LIMIT boss rule)
+func _check_hand_size_limit() -> void:
+	if not stage_config.has_boss_rule():
+		return
+	
+	if stage_config.boss_rule == StageConfig.BossRule.CARD_LIMIT:
+		var limit: int = stage_config.boss_rule_param.get("limit", 5)
+		while _hand.size() > limit:
+			# Remove excess cards (discard oldest or random)
+			var excess_card: CardData = _hand.pop_back()
+			_deck.discard(excess_card)
+			print("Boss 规则: 手牌超限，丢弃 %s" % excess_card.get_id())
 
 
 ## Update the info panel display
@@ -390,7 +479,12 @@ func update_info_display() -> void:
 	_target_score_label.text = "目标: %d" % stage_config.get_target_score()
 	_current_score_label.text = "得分: %d" % _current_score
 	_remaining_turns_label.text = "回合: %d" % _remaining_turns
-	_blind_type_label.text = BlindType.get_display_name_cn(stage_config.blind_type)
+	
+	# Show blind type with boss rule if applicable
+	var blind_text: String = BlindType.get_display_name_cn(stage_config.blind_type)
+	if stage_config.has_boss_rule():
+		blind_text += " (" + stage_config.get_boss_rule_description() + ")"
+	_blind_type_label.text = blind_text
 
 
 ## Update button enabled/disabled states
@@ -424,6 +518,10 @@ func _on_play_button_pressed() -> void:
 
 ## Play the selected cards
 func play_cards() -> void:
+	# Check play limit for boss rule
+	if not _can_play_this_turn():
+		return
+	
 	# Evaluate hand type with rule modifier
 	var rule_modifier: RuleModifier = null
 	if _effect_trigger:
@@ -436,7 +534,7 @@ func play_cards() -> void:
 	# Trigger play effects
 	_trigger_play_effects(_selected_cards)
 	
-	# Calculate score with equipment modifiers
+	# Calculate score with equipment modifiers and boss rules
 	var score: int = _calculate_score_with_equipment(hand_result)
 	
 	# Trigger score effects
@@ -448,6 +546,7 @@ func play_cards() -> void:
 	# Decrease turns
 	_remaining_turns -= 1
 	_current_turn += 1
+	_plays_this_turn += 1
 	
 	# Print play result
 	print("出牌 %s 得分 %d (总分: %d/%d)" % [
@@ -466,8 +565,14 @@ func play_cards() -> void:
 	var cards_played: int = stage_config.max_selection_size  # Rough estimate
 	draw_cards_to_fill(cards_played)
 	
+	# Apply hand size limit if boss rule
+	_check_hand_size_limit()
+	
 	# Trigger turn end effects
 	_trigger_turn_end_effects()
+	
+	# Reset plays counter for next turn
+	_plays_this_turn = 0
 	
 	# Update displays
 	update_info_display()
@@ -564,18 +669,40 @@ func check_game_result() -> void:
 func show_victory() -> void:
 	_current_state = GameState.VICTORY
 	
+	# Calculate and award reward
+	var reward: int = stage_config.get_reward()
+	if _stage_manager:
+		_stage_manager.add_gold(reward)
+		_player_gold = _stage_manager.get_player_gold()
+	
 	_result_panel.visible = true
 	_result_label.text = "过关！"
 	_result_label.add_theme_color_override("font_color", Color("#4ade80"))
-	_final_score_label.text = "最终得分: %d / %d" % [_current_score, stage_config.get_target_score()]
 	
-	_status_label.text = "恭喜过关！点击重置再次挑战"
+	# Check if there's a next stage
+	var has_next: bool = _stage_manager and _stage_manager.has_next_stage()
+	if has_next:
+		_final_score_label.text = "得分: %d / %d\n奖励: %d 金币\n点击重置进入下一关" % [
+			_current_score, stage_config.get_target_score(), reward
+		]
+		_status_label.text = "过关！获得 %d 金币。进入下一关..." % reward
+	else:
+		_final_score_label.text = "得分: %d / %d\n奖励: %d 金币\n恭喜完成所有关卡！" % [
+			_current_score, stage_config.get_target_score(), reward
+		]
+		_status_label.text = "游戏胜利！获得 %d 金币" % reward
 	
 	# Disable play and discard buttons
 	_play_button.disabled = true
 	_discard_button.disabled = true
 	
-	print("胜利！得分: %d / 目标: %d" % [_current_score, stage_config.get_target_score()])
+	# Update stage manager progress
+	if _stage_manager:
+		_stage_manager.complete_stage(_current_score, reward)
+	
+	print("胜利！得分: %d / 目标: %d, 奖励: %d 金币" % [
+		_current_score, stage_config.get_target_score(), reward
+	])
 
 
 ## Show defeat screen
@@ -606,13 +733,43 @@ func reset_stage() -> void:
 	# Hide result panel
 	_result_panel.visible = false
 	
-	# Re-setup with the same stage config
+	# Check if we should advance to next stage
+	if _current_state == GameState.VICTORY and _stage_manager and _stage_manager.has_next_stage():
+		# Advance to next stage
+		advance_to_next_stage()
+		return
+	
+	# Re-setup with the same stage config (retry)
 	if stage_config:
+		# Reset plays counter for retry
+		_plays_this_turn = 0
 		setup_stage(stage_config)
 	else:
-		var default_stage: StageConfig = load("res://resources/stages/stage_1.tres") as StageConfig
-		if default_stage:
-			setup_stage(default_stage)
+		# Fallback to first stage
+		if _stage_manager:
+			var first_stage: StageConfig = _stage_manager.load_stage_by_index(0)
+			if first_stage:
+				setup_stage(first_stage)
+
+
+## Advance to the next stage
+func advance_to_next_stage() -> void:
+	if not _stage_manager or not _stage_manager.has_next_stage():
+		push_warning("没有下一关")
+		return
+	
+	# Complete current stage (already done in show_victory, but ensure it)
+	_stage_manager.complete_stage(_current_score, stage_config.get_reward())
+	
+	# Load next stage
+	var next_stage: StageConfig = _stage_manager.load_current_stage()
+	if next_stage:
+		_plays_this_turn = 0
+		setup_stage(next_stage)
+		print("进入下一关: %s" % next_stage.display_name)
+	else:
+		push_error("无法加载下一关")
+		_status_label.text = "错误：无法加载下一关"
 
 
 # ============================================================================
