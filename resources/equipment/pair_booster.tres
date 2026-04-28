@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_equipment")
-display_name = "Pair Booster"
-description = "A magical artifact that doubles the multiplier for One Pair hands."
+display_name = "对子增幅器"
+description = "一件魔法器物，使对子牌型的倍率翻倍。"
 category = 2
 effect_type = 0
 trigger_timing = 3

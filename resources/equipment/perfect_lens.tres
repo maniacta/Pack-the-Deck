@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_equipment")
-display_name = "Perfect Lens"
-description = "A perfectly crafted optical lens. Straights now require only 4 consecutive cards instead of 5."
+display_name = "完美镜片"
+description = "一块完美打磨的光学镜片。顺子现在只需 4 张连续牌即可组成（原需 5 张）。"
 category = 0
 effect_type = 0
 trigger_timing = 3

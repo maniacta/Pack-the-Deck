@@ -412,9 +412,13 @@ MVP 阶段：同类装备不能同时装备。
 - [x] 规则改写系统 (scripts/systems/rule_modifier.gd) ✅
 - [x] 效果触发系统 (scripts/systems/effect_trigger.gd) ✅
 - [x] 关卡管理器 (scripts/systems/stage_manager.gd) ✅
+- [x] 背包面板 (scripts/ui/backpack_panel.gd) ✅
+- [x] 商店数据 (scripts/systems/shop_item.gd, shop_config.gd) ✅
+- [x] 商店管理器 (scripts/systems/shop_manager.gd) ✅
+- [x] 商店控制器 (scripts/ui/shop_controller.gd) ✅
+- [x] 商店场景 (scenes/shop.tscn) ✅
 - [ ] 手牌管理 (scripts/systems/hand_manager.gd)
 - [ ] 回合管理 (scripts/systems/turn_manager.gd)
-- [ ] 商店系统 (scripts/systems/shop_manager.gd)
 - [ ] 游戏状态机 (scripts/systems/game_manager.gd)
 
 ---
@@ -655,16 +659,19 @@ boss_rule_param = {"limit": 5}
       - `PlayButton` - 出牌按钮
       - `DiscardButton` - 弃牌按钮
       - `ResetButton` - 重置按钮
+      - `BackpackButton` - 背包按钮
       - `StatusLabel` - 状态提示
-    - `ResultPanel` (Panel) - 结果面板（过关/失败结算）
-      - `ResultLabel` - 结果标题（过关/失败）
-      - `ScoreInfoLabel` - 得分信息
-      - `RewardInfoLabel` - 奖励信息
-      - `GoldInfoLabel` - 当前金币
-      - `ButtonContainer` (HBoxContainer) - 操作按钮容器
-        - `NextStageButton` - 下一关按钮（有下一关时显示）
-        - `ShopButton` - 商店按钮（预留，暂未开放）
-        - `RetryButton` - 重试按钮
+  - `ResultPanel` (Panel) - 结果面板（居中弹窗，过关/失败结算）
+    - `ResultLabel` - 结果标题（过关/失败）
+    - `ScoreInfoLabel` - 得分信息
+    - `RewardInfoLabel` - 奖励信息
+    - `GoldInfoLabel` - 当前金币
+    - `ButtonContainer` (HBoxContainer) - 操作按钮容器
+      - `NextStageButton` - 下一关按钮（有下一关时显示）
+      - `ShopButton` - 商店按钮（过关后可用）
+      - `RetryButton` - 重试按钮
+  - `BackpackPanel` (Control, instanced) - 背包面板（默认隐藏）
+  - `ShopScene` (Control, instanced) - 商店场景（默认隐藏）
 
 ---
 
@@ -709,7 +716,155 @@ boss_rule_param = {"limit": 5}
 
 ---
 
-**文档版本**: v1.7  
-**最后更新**: 2026-04-15  
-**已完成阶段**: 阶段一至六全部完成  
-**本次更新**: 优化关卡结算面板，添加下一关/商店/重试按钮，不再自动进入下一关
+## 背包面板系统 (scripts/ui/ 和 scenes/)
+
+### backpack_panel.gd
+**类型**: `class_name BackpackPanel extends Control`
+
+**职责**: 背包面板 UI 组件，显示 5×4 装备网格和库存列表
+
+**主要属性**:
+- `equipment_manager: EquipmentManager` - 装备管理器引用
+- `_selected_inventory_item: EquipmentData` - 当前选中的库存物品
+- `_selected_equipped_item: EquipmentData` - 当前选中的已装备物品
+
+**主要方法**:
+- `open_panel(gold, stage_manager)` - 打开面板并显示当前状态
+- `close_panel()` - 关闭面板
+- `set_status_message(message)` - 设置状态栏消息
+- `_refresh_grid()` - 刷新网格显示
+- `_refresh_inventory()` - 刷新库存列表
+- `_show_equipment_detail(equipment)` / `_hide_detail()` - 显示/隐藏装备详情
+
+**信号**:
+- `equipment_place_requested(equipment, position)` - 请求放置装备
+- `equipment_remove_requested(equipment)` - 请求移除装备
+- `panel_closed()` - 面板关闭时发出
+
+### backpack_panel.tscn
+**类型**: 场景文件
+
+**节点结构**:
+- `BackpackPanel` (Control) - 根节点
+  - `PanelContainer` - 面板背景
+    - `MainVBox` (VBoxContainer)
+      - `TitleBar` (HBoxContainer)
+        - `TitleLabel` ("背包")
+        - `GoldLabel` (金币显示)
+        - `CloseButton` ("✕")
+      - `ContentHBox` (HBoxContainer)
+        - `GridArea` (VBoxContainer)
+          - `GridLabel` ("装备网格")
+          - `GridScroll` (ScrollContainer)
+            - `GridContainer` (5 列)
+        - `InventoryArea` (VBoxContainer)
+          - `InventoryLabel` ("库存物品")
+          - `InventoryScroll` (ScrollContainer)
+            - `InventoryContainer` (VBoxContainer)
+      - `DetailArea` (PanelContainer) - 装备详情面板
+        - `DetailVBox`
+          - `DetailNameLabel` / `DetailDescLabel`
+          - `DetailCategoryLabel` / `DetailShapeLabel`
+          - `DetailRemoveButton` ("卸下装备")
+      - `StatusBar` (HBoxContainer)
+        - `StatusLabel`
+
+---
+
+## 商店系统 (scripts/systems/ 和 scripts/ui/ 和 scenes/)
+
+### shop_item.gd / shop_config.gd
+**类型**: `class_name ShopItem extends Resource` 和 `class_name ShopConfig extends Resource`
+
+**职责**: 商店数据结构定义（拆分为两个独立文件）
+
+**ShopItem 主要属性**:
+- `equipment: EquipmentData` - 关联的装备
+- `price: int` - 金币价格
+- `is_sold: bool` - 是否已售出
+
+**ShopItem 主要方法**:
+- `can_purchase(player_gold)` - 检查是否可购买
+- `mark_as_sold()` - 标记为已售出
+
+**ShopConfig 主要属性**:
+- `items: Array[ShopItem]` - 商品列表
+- `refresh_cost: int` - 刷新费用
+- `max_free_refreshes: int` - 最大免费刷新次数
+- `item_count: int` - 物品数量
+
+**ShopConfig 主要方法**:
+- `get_remaining_free_refreshes()` - 获取剩余免费刷新次数
+- `get_refresh_cost()` - 获取刷新费用
+- `has_available_items()` - 检查是否有未售出物品
+- `get_available_items()` - 获取所有未售出物品
+- `increment_refresh()` - 增加刷新计数
+
+### shop_manager.gd
+**类型**: `class_name ShopManager extends RefCounted`
+
+**职责**: 商店管理器，处理商店生成、刷新和购买逻辑
+
+**主要属性**:
+- `shop_config: ShopConfig` - 当前商店配置
+- `is_open: bool` - 商店是否打开
+- `EQUIPMENT_POOL: Array[String]` - 装备资源路径池
+
+**主要方法**:
+- `generate_shop(item_count, refresh_cost, max_free_refreshes)` - 生成商店
+- `perform_refresh()` - 刷新商店物品
+- `purchase_item(item, player_gold, inventory)` - 购买物品
+- `open_shop()` / `close_shop()` - 打开/关闭商店
+- `get_shop_summary()` - 获取商店摘要
+
+**信号**:
+- `item_purchased(item)` - 购买成功时发出
+- `shop_refreshed(items)` - 刷新完成时发出
+
+### shop_controller.gd
+**类型**: `class_name ShopController extends Control`
+
+**职责**: 商店 UI 控制器，处理商店界面交互
+
+**主要属性**:
+- `shop_manager: ShopManager` - 商店管理器引用
+- `stage_manager: StageManager` - 关卡管理器引用
+- `player_gold: int` - 当前金币
+
+**主要方法**:
+- `open_shop(gold, manager, stage_mgr)` - 打开商店
+- `close_shop()` - 关闭商店
+- `update_after_purchase()` - 购买后更新显示
+- `update_after_refresh()` - 刷新后更新显示
+- `set_gold(gold)` - 设置金币
+
+**信号**:
+- `purchase_requested(item)` - 请求购买
+- `refresh_requested()` - 请求刷新
+- `shop_closed()` - 商店关闭
+- `continue_requested()` - 继续下一关
+
+### shop.tscn
+**类型**: 场景文件
+
+**节点结构**:
+- `ShopScene` (Control) - 根节点
+  - `PanelContainer` - 面板背景
+    - `MainVBox` (VBoxContainer)
+      - `TitleBar` (HBoxContainer)
+        - `TitleLabel` ("商店")
+        - `GoldLabel` (金币显示)
+        - `CloseButton` ("✕")
+      - `ItemsScroll` (ScrollContainer)
+        - `ItemsContainer` (VBoxContainer)
+      - `BottomBar` (HBoxContainer)
+        - `RefreshButton` ("刷新")
+        - `ContinueButton` ("继续")
+        - `StatusLabel`
+
+---
+
+**文档版本**: v1.8  
+**最后更新**: 2026-04-28  
+**已完成阶段**: 阶段一至七全部完成（含背包面板和商店系统）  
+**本次更新**: 实现背包面板 UI（5×4 网格显示、装备放置/移除）和商店系统（ShopManager + ShopController + ShopScene）

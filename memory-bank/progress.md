@@ -6,9 +6,9 @@
 
 ## 当前状态
 
-**当前阶段**: 阶段六-战斗循环完整流程 - ✅ 完成（已优化关卡切换）
+**当前阶段**: 阶段七-基础 UI 实现 + 阶段七-B-商店系统 - ✅ 完成
 
-**下一阶段**: 阶段七-基础 UI 实现（根据 implementation-plan.md）
+**下一阶段**: 阶段八-测试关卡与可玩验证（根据 implementation-plan.md）
 
 ---
 
@@ -291,23 +291,84 @@
 
 ---
 
+### 2026-04-28 - 阶段七：基础 UI 实现 + 阶段七-B：商店系统
+
+#### 步骤 7.5：背包面板 UI ✅
+- [x] 创建 BackpackPanel 类 (scripts/ui/backpack_panel.gd)
+- [x] 实现 5×4 网格可视化显示
+- [x] 实现装备库存列表显示
+- [x] 实现装备放置交互（选择库存物品 → 点击网格放置）
+- [x] 实现装备移除交互（点击已占用格子 → 卸下按钮）
+- [x] 实现装备详情面板（名称、描述、类别、占格数）
+- [x] 实现类别颜色区分（光学=蓝、机械=橙、魔法=紫、通用=灰）
+- [x] 实现网格高亮（显示可放置/不可放置位置）
+- [x] 创建背包面板场景 (scenes/backpack_panel.tscn)
+- [x] 在 ActionBar 添加「背包」按钮
+- [x] 在 EquipmentData 添加 get_shape_display() 方法
+
+#### 步骤 7B.1：商店数据结构 ✅
+- [x] 创建 ShopItem 类 (scripts/systems/shop_data.gd) - 装备引用、价格、购买状态
+- [x] 创建 ShopConfig 类 - 商品列表、刷新费用、免费刷新次数
+- [x] 实现 can_purchase/mark_as_sold/get_available_items 方法
+
+#### 步骤 7B.2：商店生成逻辑 ✅
+- [x] 创建 ShopManager 类 (scripts/systems/shop_manager.gd)
+- [x] 定义装备资源池 (EQUIPMENT_POOL)
+- [x] 实现随机物品选择 (_select_random_equipment)
+- [x] 实现价格计算 (_calculate_price - 基于格数、类别、参数)
+- [x] 实现商店刷新 (perform_refresh)
+- [x] 实现购买流程 (purchase_item - 扣金币、标记售出、加入库存)
+- [x] 实现信号机制 (item_purchased, shop_refreshed)
+
+#### 步骤 7B.3：购买流程 ✅
+- [x] 整合 StageManager.spend_gold() 处理金币扣除
+- [x] 购买后自动将装备添加到 EquipmentManager 库存
+- [x] 已售出物品标记为不可再购买
+
+#### 步骤 7B.4：商店 UI ✅
+- [x] 创建 ShopController 类 (scripts/ui/shop_controller.gd)
+- [x] 创建商店场景 (scenes/shop.tscn)
+- [x] 实现物品卡片显示（图标、名称、描述、类别、价格、购买按钮）
+- [x] 实现刷新按钮（显示免费次数/费用）
+- [x] 实现继续按钮（关闭商店，进入下一关）
+- [x] 实现金币实时显示
+
+#### 步骤 7B.5：整合商店到游戏循环 ✅
+- [x] 过关后启用商店按钮（替换之前的禁用占位符）
+- [x] BattleController 集成 ShopManager 和 ShopController
+- [x] 商店关闭后返回结果面板
+- [x] 从商店继续后进入下一关（或显示通关）
+
+#### 修改文件 ✅
+- [x] scripts/equipment/equipment_data.gd - 添加 get_shape_display()
+- [x] scripts/battle_controller.gd - 集成背包面板和商店系统
+- [x] scenes/battle.tscn - 添加 BackpackButton、BackpackPanel、ShopScene 节点
+
+#### 新增文件 ✅
+- [x] scripts/ui/backpack_panel.gd - 背包面板脚本
+- [x] scenes/backpack_panel.tscn - 背包面板场景
+- [x] scripts/systems/shop_item.gd - 商店物品数据结构
+- [x] scripts/systems/shop_config.gd - 商店配置数据结构
+- [x] scripts/systems/shop_manager.gd - 商店管理器
+- [x] scripts/ui/shop_controller.gd - 商店控制器
+- [x] scenes/shop.tscn - 商店场景
+
+#### 文档更新 ✅
+- [x] 更新 architecture.md - 记录背包面板和商店系统结构
+- [x] 更新 progress.md - 本文件
+
+---
+
 ## 待办事项
 
-### 阶段七：基础 UI 实现（下一步）
-- [ ] 步骤 7.1：创建主场景结构
-- [ ] 步骤 7.2：实现卡牌显示（已完成部分）
-- [ ] 步骤 7.3：实现手牌区域（已完成部分）
-- [ ] 步骤 7.4：实现出牌区域（已完成部分）
-- [ ] 步骤 7.5：实现背包面板
-- [ ] 步骤 7.6：实现信息栏（已完成部分）
-- [ ] 步骤 7.7：实现操作按钮（已完成部分）
+### 阶段八：测试关卡与可玩验证（下一步）
+- [ ] 步骤 8.1：创建测试关卡
+- [ ] 步骤 8.2：端到端游戏流程测试
+- [ ] 步骤 8.3：边界情况测试
 
-### 阶段七-B：商店系统
-- [ ] 步骤 7B.1：实现商店数据结构
-- [ ] 步骤 7B.2：实现商店生成逻辑
-- [ ] 步骤 7B.3：实现购买流程
-- [ ] 步骤 7B.4：实现商店 UI
-- [ ] 步骤 7B.5：整合商店到游戏循环
+### 阶段九：基础游戏完成检查点
+- [ ] 验收标准检查
+- [ ] 核心循环可玩验证
 
 ---
 
@@ -431,5 +492,5 @@
 
 ---
 
-**文档版本**: v1.7  
-**最后更新**: 2026-04-15
+**文档版本**: v1.8  
+**最后更新**: 2026-04-28

@@ -55,6 +55,9 @@ var _effect_trigger: EffectTrigger = null
 ## Stage manager (handles multi-stage progression)
 var _stage_manager: StageManager = null
 
+## Shop manager (handles shop generation and purchasing)
+var _shop_manager: ShopManager = null
+
 ## Card display nodes currently in hand area
 var _hand_card_displays: Array[CardDisplay] = []
 
@@ -84,19 +87,27 @@ var _play_card_displays: Array[CardDisplay] = []
 @onready var _reset_button: Button = $"../BattleUI/ActionBar/ResetButton"
 @onready var _status_label: Label = $"../BattleUI/ActionBar/StatusLabel"
 
-@onready var _result_panel: Panel = $"../BattleUI/ResultPanel"
-@onready var _result_label: Label = $"../BattleUI/ResultPanel/ResultLabel"
-@onready var _score_info_label: Label = $"../BattleUI/ResultPanel/ScoreInfoLabel"
-@onready var _reward_info_label: Label = $"../BattleUI/ResultPanel/RewardInfoLabel"
-@onready var _gold_info_label: Label = $"../BattleUI/ResultPanel/GoldInfoLabel"
-@onready var _next_stage_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/NextStageButton"
-@onready var _shop_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/ShopButton"
-@onready var _retry_button: Button = $"../BattleUI/ResultPanel/ButtonContainer/RetryButton"
+@onready var _result_panel: Panel = $"../ResultPanel"
+@onready var _result_label: Label = $"../ResultPanel/ResultLabel"
+@onready var _score_info_label: Label = $"../ResultPanel/ScoreInfoLabel"
+@onready var _reward_info_label: Label = $"../ResultPanel/RewardInfoLabel"
+@onready var _gold_info_label: Label = $"../ResultPanel/GoldInfoLabel"
+@onready var _next_stage_button: Button = $"../ResultPanel/ButtonContainer/NextStageButton"
+@onready var _shop_button: Button = $"../ResultPanel/ButtonContainer/ShopButton"
+@onready var _retry_button: Button = $"../ResultPanel/ButtonContainer/RetryButton"
+
+@onready var _backpack_button: Button = $"../BattleUI/ActionBar/BackpackButton"
+@onready var _backpack_panel: BackpackPanel = $"../BackpackPanel"
+
+@onready var _shop_scene: ShopController = $"../ShopScene"
 
 
 func _ready() -> void:
 	# Initialize stage manager
 	_stage_manager = StageManager.new()
+	
+	# Initialize shop manager
+	_shop_manager = ShopManager.new()
 	
 	# Initialize UI button connections
 	_play_button.pressed.connect(_on_play_button_pressed)
@@ -108,8 +119,22 @@ func _ready() -> void:
 	_shop_button.pressed.connect(_on_shop_button_pressed)
 	_retry_button.pressed.connect(_on_retry_button_pressed)
 	
-	# Hide result panel initially
+	# Initialize backpack panel
+	_backpack_button.pressed.connect(_on_backpack_button_pressed)
+	_backpack_panel.equipment_place_requested.connect(_on_equipment_place_from_panel)
+	_backpack_panel.equipment_remove_requested.connect(_on_equipment_remove_from_panel)
+	_backpack_panel.panel_closed.connect(_on_backpack_panel_closed)
+	
+	# Initialize shop scene signals
+	_shop_scene.purchase_requested.connect(_on_shop_purchase_requested)
+	_shop_scene.refresh_requested.connect(_on_shop_refresh_requested)
+	_shop_scene.shop_closed.connect(_on_shop_closed)
+	_shop_scene.continue_requested.connect(_on_shop_continue_requested)
+	
+	# Hide result panel, backpack panel, and shop scene initially
 	_result_panel.visible = false
+	_backpack_panel.visible = false
+	_shop_scene.visible = false
 	
 	# Start new game (load first stage)
 	var first_stage: StageConfig = _stage_manager.start_game()
@@ -712,9 +737,9 @@ func show_victory() -> void:
 		_next_stage_button.text = "完成"
 		_next_stage_button.visible = false
 	
-	# Shop button (disabled for MVP, will be enabled in future)
-	_shop_button.disabled = true
-	_shop_button.text = "商店 (暂未开放)"
+	# Shop button (available after victory)
+	_shop_button.disabled = false
+	_shop_button.text = "商店"
 	
 	# Retry button always available
 	_retry_button.disabled = false
@@ -740,10 +765,171 @@ func _on_next_stage_button_pressed() -> void:
 	advance_to_next_stage()
 
 
-## Handle shop button click (placeholder for future implementation)
+## Handle shop button click - open shop scene
 func _on_shop_button_pressed() -> void:
-	# TODO: Open shop scene in future update
-	print("商店功能暂未开放")
+	# Generate shop if needed
+	if _shop_manager.shop_config == null:
+		_shop_manager.generate_shop()
+	
+	# Get current gold for shop
+	var gold: int = _stage_manager.get_player_gold() if _stage_manager else 0
+	
+	# Open shop
+	_shop_scene.open_shop(gold, _shop_manager, _stage_manager)
+	_result_panel.visible = false
+
+
+## Handle backpack button click - toggle backpack panel
+func _on_backpack_button_pressed() -> void:
+	if _current_state != GameState.PLAYER_TURN:
+		_status_label.text = "只能在玩家回合中打开背包"
+		return
+	
+	if _backpack_panel.visible:
+		# 面板已打开，关闭它
+		_backpack_panel.close_panel()
+	else:
+		# 打开背包面板
+		var gold: int = _stage_manager.get_player_gold() if _stage_manager else 0
+		_backpack_panel.equipment_manager = _equipment_manager
+		_backpack_panel.open_panel(gold, _stage_manager)
+		_backpack_button.disabled = true
+		_play_button.disabled = true
+		_discard_button.disabled = true
+		_reset_button.disabled = true
+		_status_label.text = "背包已打开 - 管理你的装备"
+
+
+## Handle backpack panel closed
+func _on_backpack_panel_closed() -> void:
+	_backpack_button.disabled = false
+	update_button_states()
+	update_info_display()
+	update_selection_display()
+
+
+## Handle equipment placement from backpack panel
+func _on_equipment_place_from_panel(equipment: EquipmentData, position: Vector2i) -> void:
+	if not _equipment_manager:
+		return
+	
+	if _equipment_manager.place_equipment(equipment, position):
+		# 规则修改器会通过 EquipmentManager 信号自动更新
+		_status_label.text = "已装备: %s" % equipment.display_name
+		_backpack_panel.set_status_message("已装备: %s" % equipment.display_name)
+	else:
+		_status_label.text = "无法放置装备到该位置"
+		_backpack_panel.set_status_message("无法放置: 位置冲突或越界")
+
+
+## Handle equipment removal from backpack panel
+func _on_equipment_remove_from_panel(equipment: EquipmentData) -> void:
+	if not _equipment_manager:
+		return
+	
+	if _equipment_manager.unequip(equipment):
+		# 规则修改器会通过 EquipmentManager 信号自动更新
+		_status_label.text = "已卸下: %s" % equipment.display_name
+		_backpack_panel.set_status_message("已卸下: %s" % equipment.display_name)
+	else:
+		_status_label.text = "无法卸下装备"
+
+
+# ============================================================================
+# Shop System Handlers
+# ============================================================================
+
+## Handle shop purchase request
+func _on_shop_purchase_requested(item: ShopItem) -> void:
+	if not _shop_manager or not _stage_manager:
+		return
+	
+	var gold: int = _stage_manager.get_player_gold()
+	
+	# 检查是否可以购买
+	if not item.can_purchase(gold):
+		_status_label.text = "金币不足或物品已售出"
+		return
+	
+	# 扣除金币
+	if not _stage_manager.spend_gold(item.price):
+		_status_label.text = "扣款失败"
+		return
+	gold = _stage_manager.get_player_gold()
+	
+	# 标记已售出
+	item.mark_as_sold()
+	
+	# 添加装备到库存
+	var equipment: EquipmentData = item.equipment
+	if equipment:
+		_equipment_manager.add_to_inventory(equipment)
+		_status_label.text = "购买了: %s (%d 金币)" % [equipment.display_name, item.price]
+	
+	# 更新商店显示
+	_shop_scene.player_gold = gold
+	_shop_scene.update_after_purchase()
+	
+	print("购买: %s, 剩余金币: %d" % [equipment.display_name if equipment else "未知", gold])
+
+
+## Handle shop refresh request
+func _on_shop_refresh_requested() -> void:
+	if not _shop_manager or not _stage_manager:
+		return
+	
+	var gold: int = _stage_manager.get_player_gold()
+	var config: ShopConfig = _shop_manager.shop_config
+	
+	if not config:
+		return
+	
+	var cost: int = config.get_refresh_cost()
+	
+	# 检查金币是否足够（免费刷新不需要检查）
+	if cost > 0 and not _stage_manager.spend_gold(cost):
+		_status_label.text = "金币不足，无法刷新（需要 %d）" % cost
+		return
+	
+	# 刷新商店
+	_shop_manager.perform_refresh()
+	gold = _stage_manager.get_player_gold()
+	
+	# 更新商店显示
+	_shop_scene.player_gold = gold
+	_shop_scene.update_after_refresh()
+	
+	if cost > 0:
+		_status_label.text = "刷新商店，花费 %d 金币" % cost
+	else:
+		_status_label.text = "免费刷新商店"
+
+
+## Handle shop closed (return to result panel)
+func _on_shop_closed() -> void:
+	# Return to result panel
+	_result_panel.visible = true
+	_status_label.text = "商店已关闭"
+
+
+## Handle shop continue (proceed to next stage)
+func _on_shop_continue_requested() -> void:
+	if _current_state != GameState.VICTORY:
+		return
+	
+	# Close shop
+	_shop_scene.visible = false
+	if _shop_manager:
+		_shop_manager.close_shop()
+	
+	# Advance to next stage (or show victory if complete)
+	if _stage_manager and _stage_manager.has_next_stage():
+		advance_to_next_stage()
+	elif _stage_manager and _stage_manager.is_completed():
+		_status_label.text = "恭喜通关！所有关卡已完成"
+	else:
+		# No next stage, just reset
+		_result_panel.visible = true
 
 
 ## Handle retry button click from result panel
@@ -783,8 +969,9 @@ func show_defeat() -> void:
 	_next_stage_button.visible = false
 	_next_stage_button.disabled = true
 	
-	# Shop button disabled on defeat
+	# Shop button disabled on defeat (no shopping after losing)
 	_shop_button.disabled = true
+	_shop_button.text = "商店"
 	
 	# Retry button available
 	_retry_button.disabled = false

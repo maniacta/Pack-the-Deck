@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_equipment")
-display_name = "Lucky Coin"
-description = "A fortunate coin that brings wealth. Gain +1 gold at the start of each turn."
+display_name = "幸运硬币"
+description = "一枚带来财富的幸运硬币。每回合开始时获得 +1 金币。"
 category = 3
 effect_type = 2
 trigger_timing = 0

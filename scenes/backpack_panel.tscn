@@ -1,0 +1,201 @@
+[gd_scene load_steps=5 format=3 uid="uid://backpack_panel"]
+
+[ext_resource type="Script" path="res://scripts/ui/backpack_panel.gd" id="1_backpack_panel"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_bg"]
+bg_color = Color(0.12, 0.12, 0.2, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.35, 0.5, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_title_bar"]
+bg_color = Color(0.15, 0.15, 0.28, 1)
+border_width_bottom = 1
+border_color = Color(0.35, 0.35, 0.5, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_detail_bg"]
+bg_color = Color(0.1, 0.1, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.45, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="BackpackPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_backpack_panel")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -220.0
+offset_right = 280.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel_bg")
+
+[node name="MainVBox" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TitleBar" type="HBoxContainer" parent="PanelContainer/MainVBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_title_bar")
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/MainVBox/TitleBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_font_sizes/font_size = 18
+text = "背包"
+vertical_alignment = 1
+
+[node name="GoldLabel" type="Label" parent="PanelContainer/MainVBox/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_font_sizes/font_size = 14
+text = "金币: 0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CloseButton" type="Button" parent="PanelContainer/MainVBox/TitleBar"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "✕"
+
+[node name="ContentHBox" type="HBoxContainer" parent="PanelContainer/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="GridArea" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="GridLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/GridArea"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "装备网格 (5×4)"
+horizontal_alignment = 1
+
+[node name="GridScroll" type="ScrollContainer" parent="PanelContainer/MainVBox/ContentHBox/GridArea"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 1
+
+[node name="GridContainer" type="GridContainer" parent="PanelContainer/MainVBox/ContentHBox/GridArea/GridScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="InventoryArea" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="InventoryLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/InventoryArea"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "库存物品"
+horizontal_alignment = 1
+
+[node name="InventoryScroll" type="ScrollContainer" parent="PanelContainer/MainVBox/ContentHBox/InventoryArea"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryContainer" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/InventoryArea/InventoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="DetailArea" type="PanelContainer" parent="PanelContainer/MainVBox"]
+visible = false
+custom_minimum_size = Vector2(0, 70)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_detail_bg")
+
+[node name="DetailVBox" type="VBoxContainer" parent="PanelContainer/MainVBox/DetailArea"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="DetailNameLabel" type="Label" parent="PanelContainer/MainVBox/DetailArea/DetailVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "装备名称"
+horizontal_alignment = 1
+
+[node name="DetailDescLabel" type="Label" parent="PanelContainer/MainVBox/DetailArea/DetailVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "装备描述"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="DetailCategoryLabel" type="Label" parent="PanelContainer/MainVBox/DetailArea/DetailVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "类别"
+horizontal_alignment = 1
+
+[node name="DetailShapeLabel" type="Label" parent="PanelContainer/MainVBox/DetailArea/DetailVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "占格"
+horizontal_alignment = 1
+
+[node name="DetailRemoveButton" type="Button" parent="PanelContainer/MainVBox/DetailArea/DetailVBox"]
+visible = false
+custom_minimum_size = Vector2(100, 28)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 12
+text = "卸下装备"
+
+[node name="StatusBar" type="HBoxContainer" parent="PanelContainer/MainVBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="PanelContainer/MainVBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+horizontal_alignment = 1

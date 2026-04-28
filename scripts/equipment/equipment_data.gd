@@ -123,6 +123,14 @@ func get_bounds() -> Vector2i:
 	return Vector2i(max_x + 1, max_y + 1)
 
 
+## Get a display string for the equipment shape
+func get_shape_display() -> String:
+	var bounds := get_bounds()
+	if bounds.x <= 1 and bounds.y <= 1:
+		return "1×1"
+	return "%d×%d" % [bounds.x, bounds.y]
+
+
 ## Check if a relative position is part of this equipment's shape
 func has_position(relative_pos: Vector2i) -> bool:
 	return relative_pos in shape

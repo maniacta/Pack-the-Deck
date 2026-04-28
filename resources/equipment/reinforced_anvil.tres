@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_equipment")
-display_name = "Reinforced Anvil"
-description = "A sturdy anvil that resonates with nearby equipment. Gains bonus effects when adjacent to other items."
+display_name = "强化铁砧"
+description = "一座坚固的铁砧，与邻近装备产生共鸣。相邻装备越多，得分倍率加成越高。"
 category = 1
 effect_type = 1
 trigger_timing = 5
