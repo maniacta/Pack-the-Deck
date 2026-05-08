@@ -226,14 +226,14 @@ static func _test_card_limit_rule() -> bool:
 		return false
 	
 	# Simulate hand size check
-	var hand_size: int = 8
+	var hand_size: int = 10
 	var cards_to_discard: int = 0
 	
 	if hand_size > limit:
 		cards_to_discard = hand_size - limit
 	
-	if cards_to_discard != 3:
-		print("  ✗ 应丢弃 3 张牌 (8-5)")
+	if cards_to_discard != 5:
+		print("  ✗ 应丢弃 5 张牌 (10-5)")
 		return false
 	
 	print("  ✓ 手牌上限规则测试通过")

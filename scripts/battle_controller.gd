@@ -4,6 +4,7 @@ extends Node
 ## Battle scene controller - manages the complete battle flow.
 ## Handles deck, hand, selection, play, scoring, equipment effects, and victory/defeat.
 ## Now integrated with the equipment system for rule rewriting.
+## Uses HandManager for hand/selection state and TurnManager for turn/count logic.
 
 ## Game state enum
 enum GameState {
@@ -25,7 +26,7 @@ var stage_config: StageConfig = null
 ## The deck of cards
 var _deck: Deck = null
 
-## Cards in player's hand (max 8 by default)
+## Cards in player's hand (max 10 by default)
 var _hand: Array[CardData] = []
 
 ## Currently selected cards (max 5)
@@ -45,6 +46,15 @@ var _current_turn: int = 0
 
 ## Plays made in current turn (for Boss PLAY_LIMIT rule)
 var _plays_this_turn: int = 0
+
+## Hand manager (manages hand cards and selection state)
+var _hand_manager: HandManager = null
+
+## Turn manager (manages turn counting and boss rule limits)
+var _turn_manager: TurnManager = null
+
+## Game manager (manages global game state machine)
+var _game_manager: GameManager = null
 
 ## Equipment manager (handles backpack and equipped items)
 var _equipment_manager: EquipmentManager = null
@@ -103,8 +113,11 @@ var _play_card_displays: Array[CardDisplay] = []
 
 
 func _ready() -> void:
-	# Initialize stage manager
+	# Initialize core managers
 	_stage_manager = StageManager.new()
+	_hand_manager = HandManager.new()
+	_turn_manager = TurnManager.new()
+	_game_manager = GameManager.new()
 	
 	# Initialize shop manager
 	_shop_manager = ShopManager.new()
@@ -162,8 +175,8 @@ func _load_or_create_default_stage() -> StageConfig:
 	stage.blind_type = BlindType.Type.SMALL_BLIND
 	stage.boss_rule = StageConfig.BossRule.NONE
 	stage.base_reward = 10
-	stage.initial_hand_size = 8
-	stage.max_hand_size = 8
+	stage.initial_hand_size = 10
+	stage.max_hand_size = 10
 	stage.max_selection_size = 5
 	return stage
 
@@ -184,6 +197,16 @@ func setup_stage(config: StageConfig) -> void:
 	_plays_this_turn = 0
 	_player_gold = 0
 	
+	# Set up hand manager with stage capacity
+	_hand_manager.set_capacity(config.max_hand_size, config.max_selection_size)
+	_hand_manager.clear_all()
+	
+	# Set up turn manager with stage config (includes boss rules)
+	_turn_manager.setup(config)
+	
+	# Update game manager state
+	_game_manager.enter_battle()
+	
 	# Initialize deck
 	_deck = Deck.new()
 	_deck.shuffle()
@@ -191,7 +214,7 @@ func setup_stage(config: StageConfig) -> void:
 	# Initialize equipment system
 	_initialize_equipment_system()
 	
-	# Clear existing hand and selection
+	# Clear existing hand and selection (sync with hand manager)
 	_hand.clear()
 	_selected_cards.clear()
 	
@@ -244,21 +267,7 @@ func _initialize_equipment_system() -> void:
 	# Clear existing equipment (fresh start)
 	_equipment_manager.clear()
 	
-	# Add test equipment for demonstration (in real game, loaded from save/shop)
-	_add_test_equipment()
-	
 	print("装备系统初始化完成")
-
-
-## Add test equipment for demonstration
-func _add_test_equipment() -> void:
-	# Load the perfect_lens equipment (4-card straight rule)
-	var perfect_lens: EquipmentData = load("res://resources/equipment/perfect_lens.tres") as EquipmentData
-	if perfect_lens:
-		_equipment_manager.add_to_inventory(perfect_lens)
-		# Auto-equip for testing
-		_equipment_manager.place_equipment(perfect_lens, Vector2i(0, 0))
-		print("添加测试装备: %s" % perfect_lens.display_name)
 
 
 ## Handle effect triggered signal
@@ -288,7 +297,7 @@ func _trigger_turn_start_effects() -> void:
 				_player_gold += result.gold_change
 
 
-## Draw the initial hand (8 cards by default)
+## Draw the initial hand (10 cards by default)
 func draw_initial_hand() -> void:
 	var initial_count: int = stage_config.initial_hand_size
 	_hand = _deck.draw_cards(initial_count)
@@ -296,17 +305,21 @@ func draw_initial_hand() -> void:
 	print("抽取初始手牌: %d 张" % _hand.size())
 
 
-## Draw additional cards to fill hand
-func draw_cards_to_fill(count: int) -> void:
+## Draw additional cards to fill hand up to max_hand_size
+func draw_cards_to_fill() -> void:
 	if _deck.is_empty():
 		push_warning("牌堆已空，无法抽取更多卡牌")
 		return
 	
-	var cards_to_draw: int = min(count, _deck.get_remaining_count())
+	var space: int = stage_config.max_hand_size - _hand.size()
+	if space <= 0:
+		return
+	
+	var cards_to_draw: int = min(space, _deck.get_remaining_count())
 	var new_cards: Array[CardData] = _deck.draw_cards(cards_to_draw)
 	_hand.append_array(new_cards)
 	update_hand_display()
-	print("抽取 %d 张新牌，手牌数量: %d" % [cards_to_draw, _hand.size()])
+	print("抽取 %d 张新牌（补满至 %d），手牌数量: %d" % [cards_to_draw, stage_config.max_hand_size, _hand.size()])
 
 
 ## Update the hand display area
@@ -349,22 +362,27 @@ func _on_card_clicked(card: CardData) -> void:
 	if _current_state != GameState.PLAYER_TURN:
 		return
 	
+	# 防御性检查：已达选牌上限且不是取消已选中的牌
+	if _selected_cards.size() >= stage_config.max_selection_size and card not in _selected_cards:
+		_status_label.text = "最多选择 %d 张牌" % stage_config.max_selection_size
+		return
+	
 	toggle_card_selection(card)
 
 
 ## Toggle a card's selection state
 func toggle_card_selection(card: CardData) -> void:
-	if card in _selected_cards:
-		# Deselect
-		_selected_cards.erase(card)
-	else:
-		# Select if under limit
-		if _selected_cards.size() < stage_config.max_selection_size:
-			_selected_cards.append(card)
-		else:
-			# Already at max selection, show hint
-			_status_label.text = "最多选择 %d 张牌" % stage_config.max_selection_size
-			return
+	# Delegate selection logic to hand manager
+	var selection_changed: bool = _hand_manager.toggle_selection(card)
+	
+	if not selection_changed:
+		# Hand manager will emit selection_limit_reached if applicable
+		if _hand_manager.is_selection_full():
+			_status_label.text = "最多选择 %d 张牌" % _hand_manager.max_selection_size
+		return
+	
+	# Sync local selection array with hand manager
+	_selected_cards = _hand_manager.get_selection_ref()
 	
 	# Update visual state for all hand cards
 	for card_display: CardDisplay in _hand_card_displays:
@@ -478,31 +496,23 @@ func _calculate_score_excluding_suit(hand_result: HandType.HandResult) -> int:
 
 
 ## Check if player can play cards this turn (for PLAY_LIMIT boss rule)
+## Now delegates to TurnManager for boss rule enforcement
 func _can_play_this_turn() -> bool:
-	if not stage_config.has_boss_rule():
-		return true
-	
-	if stage_config.boss_rule == StageConfig.BossRule.PLAY_LIMIT:
-		var limit: int = stage_config.boss_rule_param.get("limit", 3)
-		if _plays_this_turn >= limit:
-			_status_label.text = "Boss 规则: 本回合已出牌 %d 次（上限 %d）" % [_plays_this_turn, limit]
-			return false
-	
-	return true
+	return _turn_manager.can_play()
 
 
 ## Check hand size limit (for CARD_LIMIT boss rule)
+## Now delegates to TurnManager for boss rule enforcement
 func _check_hand_size_limit() -> void:
-	if not stage_config.has_boss_rule():
+	var limit: int = _turn_manager.get_hand_size_limit()
+	if limit <= 0:
 		return
 	
-	if stage_config.boss_rule == StageConfig.BossRule.CARD_LIMIT:
-		var limit: int = stage_config.boss_rule_param.get("limit", 5)
-		while _hand.size() > limit:
-			# Remove excess cards (discard oldest or random)
-			var excess_card: CardData = _hand.pop_back()
-			_deck.discard(excess_card)
-			print("Boss 规则: 手牌超限，丢弃 %s" % excess_card.get_id())
+	while _hand.size() > limit:
+		# Remove excess cards (pop from end)
+		var excess_card: CardData = _hand.pop_back()
+		_deck.discard(excess_card)
+		print("Boss 规则: 手牌超限，丢弃 %s" % excess_card.get_id())
 
 
 ## Update the info panel display
@@ -553,8 +563,12 @@ func _on_play_button_pressed() -> void:
 
 ## Play the selected cards
 func play_cards() -> void:
-	# Check play limit for boss rule
-	if not _can_play_this_turn():
+	# Check play limit via turn manager (boss PLAY_LIMIT rule)
+	if not _turn_manager.can_play():
+		if _turn_manager.has_play_limit():
+			_status_label.text = "Boss 规则: 本回合已出牌 %d 次（上限 %d）" % [
+				_turn_manager.plays_this_turn, _turn_manager.max_plays_per_turn
+			]
 		return
 	
 	# Evaluate hand type with rule modifier
@@ -578,10 +592,13 @@ func play_cards() -> void:
 	# Update cumulative score
 	_current_score += score
 	
-	# Decrease turns
-	_remaining_turns -= 1
-	_current_turn += 1
-	_plays_this_turn += 1
+	# Record play in turn manager (updates remaining turns and play count)
+	_turn_manager.record_play()
+	
+	# Sync local tracking with turn manager
+	_remaining_turns = _turn_manager.remaining_turns
+	_current_turn = _turn_manager.current_turn
+	_plays_this_turn = _turn_manager.plays_this_turn
 	
 	# Print play result
 	print("出牌 %s 得分 %d (总分: %d/%d)" % [
@@ -593,14 +610,14 @@ func play_cards() -> void:
 		_hand.erase(card)
 		_deck.discard(card)
 	
-	# Clear selection
+	# Clear selection (sync with hand manager)
 	_selected_cards.clear()
+	_hand_manager.clear_selection()
 	
-	# Draw new cards to fill hand
-	var cards_played: int = stage_config.max_selection_size  # Rough estimate
-	draw_cards_to_fill(cards_played)
+	# Draw new cards to fill hand up to max_hand_size
+	draw_cards_to_fill()
 	
-	# Apply hand size limit if boss rule
+	# Apply hand size limit if boss rule (via turn manager)
 	_check_hand_size_limit()
 	
 	# Trigger turn end effects
@@ -608,6 +625,7 @@ func play_cards() -> void:
 	
 	# Reset plays counter for next turn
 	_plays_this_turn = 0
+	_turn_manager.plays_this_turn = 0
 	
 	# Update displays
 	update_info_display()
@@ -671,11 +689,12 @@ func discard_cards() -> void:
 		_hand.erase(card)
 		_deck.discard(card)
 	
-	# Clear selection
+	# Clear selection (sync with hand manager)
 	_selected_cards.clear()
+	_hand_manager.clear_selection()
 	
-	# Draw new cards
-	draw_cards_to_fill(stage_config.max_selection_size)
+	# Draw new cards to fill hand up to max_hand_size
+	draw_cards_to_fill()
 	
 	# Update displays
 	update_selection_display()
@@ -703,6 +722,13 @@ func check_game_result() -> void:
 ## Show victory screen with result panel
 func show_victory() -> void:
 	_current_state = GameState.VICTORY
+	
+	# Notify game manager of victory
+	_game_manager.on_stage_cleared(
+		_stage_manager.get_stages_completed() + 1,
+		_stage_manager.get_total_stages(),
+		not _stage_manager.has_next_stage()
+	)
 	
 	# Calculate reward
 	var reward: int = stage_config.get_reward()
@@ -767,6 +793,9 @@ func _on_next_stage_button_pressed() -> void:
 
 ## Handle shop button click - open shop scene
 func _on_shop_button_pressed() -> void:
+	# Enter shop state in game manager
+	_game_manager.enter_shop()
+	
 	# Generate shop if needed
 	if _shop_manager.shop_config == null:
 		_shop_manager.generate_shop()
@@ -922,11 +951,19 @@ func _on_shop_continue_requested() -> void:
 	if _shop_manager:
 		_shop_manager.close_shop()
 	
+	# Return to battle state
+	_game_manager.enter_battle()
+	
 	# Advance to next stage (or show victory if complete)
 	if _stage_manager and _stage_manager.has_next_stage():
 		advance_to_next_stage()
 	elif _stage_manager and _stage_manager.is_completed():
 		_status_label.text = "恭喜通关！所有关卡已完成"
+		_game_manager.on_stage_cleared(
+			_stage_manager.get_stages_completed(),
+			_stage_manager.get_total_stages(),
+			true
+		)
 	else:
 		# No next stage, just reset
 		_result_panel.visible = true
@@ -936,6 +973,11 @@ func _on_shop_continue_requested() -> void:
 func _on_retry_button_pressed() -> void:
 	# Hide result panel
 	_result_panel.visible = false
+	
+	# Reset turn manager and game manager
+	if _turn_manager:
+		_turn_manager.reset()
+	_game_manager.enter_battle()
 	
 	# Re-setup current stage (retry)
 	if stage_config:
@@ -951,6 +993,9 @@ func _on_retry_button_pressed() -> void:
 ## Show defeat screen with result panel
 func show_defeat() -> void:
 	_current_state = GameState.DEFEAT
+	
+	# Notify game manager of defeat
+	_game_manager.on_game_lost()
 	
 	_result_panel.visible = true
 	_result_label.text = "失败！"
@@ -996,6 +1041,10 @@ func reset_stage() -> void:
 	# Hide result panel
 	_result_panel.visible = false
 	
+	# Reset turn manager state
+	if _turn_manager:
+		_turn_manager.reset()
+	
 	# Always retry current stage (not advance)
 	if stage_config:
 		_plays_this_turn = 0
@@ -1021,10 +1070,15 @@ func advance_to_next_stage() -> void:
 	var reward: int = stage_config.get_reward()
 	_stage_manager.complete_stage(_current_score, reward)
 	
+	# Update game manager state
+	_game_manager.enter_battle()
+	
 	# Load and setup next stage
 	var next_stage: StageConfig = _stage_manager.load_current_stage()
 	if next_stage:
 		_plays_this_turn = 0
+		if _turn_manager:
+			_turn_manager.plays_this_turn = 0
 		setup_stage(next_stage)
 		print("进入下一关: %s" % next_stage.display_name)
 	else:
@@ -1104,3 +1158,22 @@ func place_equipment(equipment: EquipmentData, position: Vector2i) -> bool:
 		return false
 	
 	return _equipment_manager.place_equipment(equipment, position)
+
+
+# ============================================================================
+# New Manager Accessors (HandManager, TurnManager, GameManager)
+# ============================================================================
+
+## Get the hand manager
+func get_hand_manager() -> HandManager:
+	return _hand_manager
+
+
+## Get the turn manager
+func get_turn_manager() -> TurnManager:
+	return _turn_manager
+
+
+## Get the game manager
+func get_game_manager() -> GameManager:
+	return _game_manager

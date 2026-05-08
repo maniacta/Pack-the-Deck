@@ -6,13 +6,113 @@
 
 ## 当前状态
 
-**当前阶段**: 阶段七-基础 UI 实现 + 阶段七-B-商店系统 - ✅ 完成
+**当前阶段**: 阶段八-架构优化 + Bug 修复 - ✅ 完成
 
 **下一阶段**: 阶段八-测试关卡与可玩验证（根据 implementation-plan.md）
 
 ---
 
 ## 完成记录
+
+### 2026-05-08 - Bug 修复：测试反馈修复
+
+#### Bug1: 商店刷新金币不扣钱 ✅
+- [x] `shop_controller.gd` `update_after_refresh()` 缺少 `_gold_label.text` 更新
+- [x] 金币实际已从 StageManager 扣除，但 UI 标签未更新
+- [x] 修复：添加 `_gold_label.text = "金币: %d" % player_gold`
+
+#### Bug2: 启动自动装备 Perfect Lens ✅
+- [x] `battle_controller.gd` `_add_test_equipment()` 在游戏启动时自动装备 perfect_lens
+- [x] 导致"顺子只需4张"规则始终生效，绕过购买流程
+- [x] 修复：移除 `_add_test_equipment()` 调用及函数本身
+- [x] 游戏现在以空装备状态启动，玩家必须通过商店购买装备
+
+#### Bug3: 手牌上限 8→10 ✅
+- [x] `stage_config.gd`: `initial_hand_size` 和 `max_hand_size` 默认值 8→10
+- [x] `hand_manager.gd`: `max_hand_size` 默认值 8→10
+- [x] `stage_1.tres`, `stage_2.tres`, `stage_3.tres`: 各两个字段 8→10
+- [x] `battle_controller.gd`: 回退硬编码值 8→10
+- [x] `test_boss_rules.gd`: 测试值 8→10，断言 3→5
+
+#### Bug4: 装备多格显示 ✅
+- [x] `equipment_manager.gd`: 新增 `get_equipment_anchor()` 公开方法
+- [x] `backpack_panel.gd` `_refresh_grid()`: 从逐格查询 Dict 改为遍历已装备物品按形状展开
+- [x] 新方法直接使用 `equipment.get_absolute_positions(anchor)` 展开所有格子
+- [x] 包含越界保护和无效锚点检查
+
+#### 修改文件 ✅
+- [x] `scripts/ui/shop_controller.gd` - Bug1: 刷新后更新金币标签
+- [x] `scripts/battle_controller.gd` - Bug2: 移除测试代码; Bug3: 回退值 8→10; 注释更新
+- [x] `scripts/systems/stage_config.gd` - Bug3: 默认值 8→10
+- [x] `scripts/systems/hand_manager.gd` - Bug3: 默认值 8→10
+- [x] `resources/stages/stage_1.tres` - Bug3: 手牌上限 10
+- [x] `resources/stages/stage_2.tres` - Bug3: 手牌上限 10
+- [x] `resources/stages/stage_3.tres` - Bug3: 手牌上限 10
+- [x] `tests/test_boss_rules.gd` - Bug3: 测试值和断言更新
+- [x] `scripts/equipment/equipment_manager.gd` - Bug4: 新增 get_equipment_anchor()
+- [x] `scripts/ui/backpack_panel.gd` - Bug4: 重写 _refresh_grid()
+
+---
+
+### 2026-05-08 - 阶段八架构优化：系统抽象提取
+
+#### 新增系统类 ✅
+- [x] 创建 HandManager (scripts/systems/hand_manager.gd) - 手牌和选牌状态管理
+- [x] 创建 TurnManager (scripts/systems/turn_manager.gd) - 回合计数和 Boss 规则执行
+- [x] 创建 GameManager (scripts/systems/game_manager.gd) - 游戏状态机
+
+#### HandManager 功能 ✅
+- [x] 手牌数组管理（添加/移除/查询）
+- [x] 选牌状态管理（切换/上限检查/清除）
+- [x] 容量限制配置（手牌上限、选牌上限）
+- [x] 信号机制（hand_changed, selection_changed, selection_full, selection_limit_reached）
+
+#### TurnManager 功能 ✅
+- [x] 回合计数管理（剩余/最大/当前回合）
+- [x] 出牌次数追踪（每回合独立计数）
+- [x] Boss 规则集成（PLAY_LIMIT 出牌限制、CARD_LIMIT 手牌上限）
+- [x] 回合生命周期信号（turn_started, turn_ended, turns_exhausted, play_limit_reached）
+
+#### GameManager 功能 ✅
+- [x] 游戏状态枚举（TITLE, BATTLE, SHOP, GAME_OVER, VICTORY）
+- [x] 状态转换逻辑（带防护：相同状态不重复切换）
+- [x] 状态查询方法（is_in_battle, is_in_shop, is_game_ended 等）
+- [x] 关卡通关/失败通知
+- [x] 信号机制（state_changed, game_started, stage_cleared 等）
+
+#### BattleController 重构 ✅
+- [x] 集成 HandManager：选牌逻辑委托给 HandManager.toggle_selection()
+- [x] 集成 TurnManager：回合/限制逻辑委托给 TurnManager.can_play() / record_play()
+- [x] 集成 GameManager：状态转换委托给 GameManager.enter_battle() / enter_shop() 等
+- [x] 保留 _hand 和 _selected_cards 数组（UI 层仍需直接访问）
+- [x] 添加公共访问器方法（get_hand_manager, get_turn_manager, get_game_manager）
+- [x] Boss 规则检查简化（_can_play_this_turn 和 _check_hand_size_limit 改为委托）
+
+#### 修改文件 ✅
+- [x] scripts/battle_controller.gd - 集成三个新管理器（1106→1184 行，净增约 78 行，但消除了内联逻辑）
+- [x] memory-bank/architecture.md - 新增 HandManager/TurnManager/GameManager 文档
+- [x] memory-bank/progress.md - 本文件
+
+#### 新增文件 ✅
+- [x] scripts/systems/hand_manager.gd - 手牌管理类（约 120 行）
+- [x] scripts/systems/turn_manager.gd - 回合管理类（约 150 行）
+- [x] scripts/systems/game_manager.gd - 游戏状态机（约 170 行）
+
+#### 设计决策
+| 决策项 | 结论 |
+|--------|------|
+| HandManager 类型 | RefCounted，纯逻辑类，不涉及 UI |
+| TurnManager 类型 | RefCounted，Boss 规则内聚在回合管理中 |
+| GameManager 类型 | RefCounted（暂不注册 Autoload），后续可提升为单例 |
+| _hand 数组保留 | 继续在 BattleController 中维护（UI 渲染依赖），HandManager 同步管理 |
+| GameManager 不持有数据 | 仅管理状态转换，StageManager/EquipmentManager 仍由 BattleController 持有 |
+
+#### 文档更新 ✅
+- [x] 更新 architecture.md - 记录三个新系统的完整 API 文档
+- [x] 更新 architecture.md - 标记"待实现系统"全部完成
+- [x] 更新 progress.md - 本文件
+
+---
 
 ### 2026-04-15 - 阶段六优化：关卡切换流程改进
 
@@ -492,5 +592,5 @@
 
 ---
 
-**文档版本**: v1.8  
-**最后更新**: 2026-04-28
+**文档版本**: v1.9  
+**最后更新**: 2026-05-08

@@ -119,6 +119,7 @@ Pack-the-Deck/
 - `get_bounds() -> Vector2i` - 获取边界框大小
 - `get_absolute_positions(anchor: Vector2i) -> Array[Vector2i]` - 获取绝对位置
 - `conflicts_with(other: EquipmentData) -> bool` - 检查是否与另一装备冲突
+- `get_equipment_anchor(equipment: EquipmentData) -> Vector2i` - 获取已装备物品的锚点位置
 
 **枚举**:
 - `Category` - OPTICAL, MECHANICAL, MAGICAL, GENERIC
@@ -142,6 +143,7 @@ Pack-the-Deck/
 - `can_place(equipment, anchor) -> bool` - 检查是否可放置
 - `place_equipment(equipment, anchor) -> bool` - 放置装备
 - `unequip(equipment) -> bool` - 卸下装备
+- `get_equipment_anchor(equipment) -> Vector2i` - 获取已装备物品的锚点
 - `get_adjacent_equipment(pos) -> Array[EquipmentData]` - 获取相邻装备
 
 **常量**:
@@ -417,9 +419,110 @@ MVP 阶段：同类装备不能同时装备。
 - [x] 商店管理器 (scripts/systems/shop_manager.gd) ✅
 - [x] 商店控制器 (scripts/ui/shop_controller.gd) ✅
 - [x] 商店场景 (scenes/shop.tscn) ✅
-- [ ] 手牌管理 (scripts/systems/hand_manager.gd)
-- [ ] 回合管理 (scripts/systems/turn_manager.gd)
-- [ ] 游戏状态机 (scripts/systems/game_manager.gd)
+- [x] 手牌管理 (scripts/systems/hand_manager.gd) ✅
+- [x] 回合管理 (scripts/systems/turn_manager.gd) ✅
+- [x] 游戏状态机 (scripts/systems/game_manager.gd) ✅
+
+---
+
+## 手牌与回合管理系统 (scripts/systems/)
+
+### hand_manager.gd
+**类型**: `class_name HandManager extends RefCounted`
+
+**职责**: 管理玩家手牌和选牌状态，纯逻辑类不涉及 UI 渲染
+
+**主要属性**:
+- `max_hand_size: int = 8` - 最大手牌数量
+- `max_selection_size: int = 5` - 最大选牌数量
+- `_hand: Array[CardData]` - 当前手牌数组
+- `_selected: Array[CardData]` - 当前选中卡牌数组
+
+**主要方法**:
+- `get_hand() / get_hand_ref()` - 获取手牌（副本/引用）
+- `get_selection() / get_selection_ref()` - 获取已选卡牌
+- `add_to_hand(cards)` - 添加卡牌到手牌
+- `remove_from_hand(cards)` - 从手牌移除卡牌
+- `toggle_selection(card) -> bool` - 切换选中状态（返回是否变化）
+- `is_selected(card) -> bool` - 检查是否被选中
+- `clear_selection()` - 清除所有选中
+- `clear_all()` - 清除手牌和选中
+- `set_capacity(max_hand, max_select)` - 设置容量限制
+
+**信号**:
+- `hand_changed(hand_size)` - 手牌数量变化
+- `selection_changed(selected_size)` - 选中数量变化
+- `hand_full()` - 手牌已满
+- `selection_full()` - 选牌已达上限
+- `selection_limit_reached(limit)` - 尝试选超过上限的牌
+
+---
+
+### turn_manager.gd
+**类型**: `class_name TurnManager extends RefCounted`
+
+**职责**: 管理回合计数、出牌次数限制和 Boss 规则执行
+
+**主要属性**:
+- `remaining_turns: int` - 剩余回合数
+- `max_turns: int` - 最大回合数
+- `current_turn: int` - 当前回合编号
+- `plays_this_turn: int` - 本回合已出牌次数
+- `max_plays_per_turn: int` - 每回合最大出牌次数（-1=无限制）
+- `max_hand_size_enforced: int` - Boss 强制手牌上限（-1=无限制）
+
+**主要方法**:
+- `setup(config: StageConfig)` - 根据关卡配置设置回合参数和 Boss 规则
+- `can_play() -> bool` - 检查本回合是否可出牌（含 PLAY_LIMIT 检查）
+- `record_play()` - 记录一次出牌（扣减回合、增加计数）
+- `has_remaining_turns() -> bool` - 是否有剩余回合
+- `is_turns_exhausted() -> bool` - 回合是否耗尽
+- `get_hand_size_limit() -> int` - 获取 Boss 手牌上限
+- `has_hand_size_limit() -> bool` - 是否有手牌限制
+- `has_play_limit() -> bool` - 是否有出牌次数限制
+- `get_boss_rule_description() -> String` - 获取 Boss 规则描述
+- `reset()` - 完全重置
+
+**信号**:
+- `turn_started(turn_number)` - 新回合开始
+- `turn_ended(turn_number, remaining)` - 回合结束
+- `turns_exhausted()` - 回合耗尽
+- `play_limit_reached(limit)` - 达到出牌次数上限
+
+---
+
+### game_manager.gd
+**类型**: `class_name GameManager extends RefCounted`
+
+**职责**: 游戏全局状态机，管理战斗/商店/胜利/失败的状态转换
+
+**主要枚举**:
+- `GameState` - TITLE, BATTLE, SHOP, GAME_OVER, VICTORY
+
+**主要属性**:
+- `current_state: GameState` - 当前游戏状态
+
+**主要方法**:
+- `change_state(new_state)` - 切换状态（发出信号）
+- `is_in_state(state) -> bool` - 检查当前状态
+- `is_in_battle() / is_in_shop()` - 快捷状态查询
+- `is_game_ended() / is_game_completed()` - 游戏结束判断
+- `start_game()` - 开始新游戏
+- `enter_battle() / enter_shop()` - 进入指定阶段
+- `on_stage_cleared(completed, total, is_last)` - 关卡通关通知
+- `on_game_lost()` - 游戏失败通知
+- `can_play_cards() -> bool` - 是否可以出牌
+- `get_state_name_cn(state)` - 静态方法，获取状态中文名
+
+**信号**:
+- `state_changed(old, new)` - 状态变化
+- `game_started()` - 游戏开始
+- `stage_cleared(completed, total)` - 关卡通关
+- `all_stages_completed()` - 全部通关
+- `game_over()` - 游戏失败
+- `battle_entered() / shop_entered()` - 阶段进入
+
+> 注：GameManager 当前为 RefCounted 类，由 BattleController 持有。后续可提升为 Autoload 单例以支持跨场景状态管理。
 
 ---
 
@@ -587,7 +690,16 @@ boss_rule_param = {"limit": 5}
 ### scripts/battle_controller.gd
 **类型**: `class_name BattleController extends Node`
 
-**职责**: 战斗场景控制器，管理完整的游戏流程
+**职责**: 战斗场景控制器，管理完整的游戏流程。现已委托手牌/选牌逻辑给 HandManager，回合/限制逻辑给 TurnManager，状态转换给 GameManager。
+
+**持有管理器**:
+- HandManager - 手牌与选牌状态
+- TurnManager - 回合计数与 Boss 规则
+- GameManager - 游戏状态机
+- StageManager - 关卡进度
+- EquipmentManager - 装备管理
+- EffectTrigger - 效果触发
+- ShopManager - 商店管理
 
 **游戏状态**:
 - `GameState.INIT` - 初始化阶段
@@ -732,7 +844,7 @@ boss_rule_param = {"limit": 5}
 - `open_panel(gold, stage_manager)` - 打开面板并显示当前状态
 - `close_panel()` - 关闭面板
 - `set_status_message(message)` - 设置状态栏消息
-- `_refresh_grid()` - 刷新网格显示
+- `_refresh_grid()` - 刷新网格显示（遍历已装备物品，按形状展开所有格子）
 - `_refresh_inventory()` - 刷新库存列表
 - `_show_equipment_detail(equipment)` / `_hide_detail()` - 显示/隐藏装备详情
 
@@ -864,7 +976,7 @@ boss_rule_param = {"limit": 5}
 
 ---
 
-**文档版本**: v1.8  
-**最后更新**: 2026-04-28  
-**已完成阶段**: 阶段一至七全部完成（含背包面板和商店系统）  
-**本次更新**: 实现背包面板 UI（5×4 网格显示、装备放置/移除）和商店系统（ShopManager + ShopController + ShopScene）
+**文档版本**: v2.0  
+**最后更新**: 2026-05-08  
+**已完成阶段**: 阶段一至七全部完成，阶段八架构优化 + Bug 修复  
+**本次更新**: 修复商店刷新金币标签、移除自动装备测试代码、手牌上限 8→10、重写装备网格渲染

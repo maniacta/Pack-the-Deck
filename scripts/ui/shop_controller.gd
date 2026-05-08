@@ -273,6 +273,7 @@ func update_after_purchase() -> void:
 
 ## 更新刷新后状态
 func update_after_refresh() -> void:
+	_gold_label.text = "金币: %d" % player_gold
 	_refresh_display()
 	_update_status()
 

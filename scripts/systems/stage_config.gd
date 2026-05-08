@@ -38,10 +38,10 @@ enum BossRule {
 @export var base_reward: int = 10
 
 ## Initial hand size
-@export var initial_hand_size: int = 8
+@export var initial_hand_size: int = 10
 
 ## Maximum hand size
-@export var max_hand_size: int = 8
+@export var max_hand_size: int = 10
 
 ## Maximum cards to select for a play
 @export var max_selection_size: int = 5

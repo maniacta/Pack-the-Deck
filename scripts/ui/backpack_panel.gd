@@ -257,31 +257,47 @@ func _on_grid_cell_input(event: InputEvent, pos: Vector2i) -> void:
 # ============================================================================
 
 ## 刷新整个网格显示
+## 直接遍历已装备物品，按形状展开到所有占用的格子
 func _refresh_grid() -> void:
 	if not equipment_manager:
 		return
 	
+	# 第一步：清除所有格子的显示状态
 	for i in range(_grid_cells.size()):
-		var x: int = i % GRID_COLS
-		var y: int = i / GRID_COLS
-		var pos := Vector2i(x, y)
 		var cell_panel: Panel = _grid_cells[i]
 		var label: Label = _grid_labels[i]
-		
-		var style: StyleBoxFlat = cell_panel.get_theme_stylebox("panel").duplicate()
-		var equipment: EquipmentData = equipment_manager.get_equipment_at(pos)
-		
-		if equipment:
-			# 已占用
-			style.bg_color = _get_category_color(equipment.category)
-			label.text = _get_equipment_short_name(equipment)
-			label.add_theme_color_override("font_color", Color.WHITE)
-		else:
-			# 空格子
-			style.bg_color = COLOR_GRID_EMPTY
-			label.text = ""
-		
+		var style: StyleBoxFlat = cell_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+		style.bg_color = COLOR_GRID_EMPTY
+		label.text = ""
 		cell_panel.add_theme_stylebox_override("panel", style)
+	
+	# 第二步：遍历已装备物品，按形状填充所有占用的格子
+	var equipped: Array[EquipmentData] = equipment_manager.get_equipped()
+	for equipment: EquipmentData in equipped:
+		var anchor: Vector2i = equipment_manager.get_equipment_anchor(equipment)
+		if anchor.x < 0 or anchor.y < 0:
+			continue  # 无效位置，跳过
+		
+		var positions: Array[Vector2i] = equipment.get_absolute_positions(anchor)
+		var category_color: Color = _get_category_color(equipment.category)
+		var short_name: String = _get_equipment_short_name(equipment)
+		
+		for pos: Vector2i in positions:
+			if pos.x < 0 or pos.x >= GRID_COLS or pos.y < 0 or pos.y >= GRID_ROWS:
+				continue  # 越界保护
+			
+			var i: int = pos.y * GRID_COLS + pos.x
+			if i < 0 or i >= _grid_cells.size():
+				continue
+			
+			var cell_panel: Panel = _grid_cells[i]
+			var label: Label = _grid_labels[i]
+			var style: StyleBoxFlat = cell_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+			
+			style.bg_color = category_color
+			label.text = short_name
+			label.add_theme_color_override("font_color", Color.WHITE)
+			cell_panel.add_theme_stylebox_override("panel", style)
 
 
 ## 刷新库存物品列表

@@ -11,8 +11,8 @@ max_turns = 4
 blind_type = 2
 boss_rule = 1
 base_reward = 25
-initial_hand_size = 8
-max_hand_size = 8
+initial_hand_size = 10
+max_hand_size = 10
 max_selection_size = 5
 boss_rule_param = {
 "suit_name": "方块"

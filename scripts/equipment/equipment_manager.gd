@@ -133,6 +133,11 @@ func get_equipped() -> Array[EquipmentData]:
 	return equipped
 
 
+## Get the anchor position of an equipped item
+func get_equipment_anchor(equipment: EquipmentData) -> Vector2i:
+	return _equipment_positions.get(equipment, Vector2i(-1, -1))
+
+
 ## Get all equipment in inventory
 func get_inventory() -> Array[EquipmentData]:
 	return _inventory.duplicate()
