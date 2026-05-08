@@ -6,13 +6,52 @@
 
 ## 当前状态
 
-**当前阶段**: 阶段八-架构优化 + Bug 修复 - ✅ 完成
+**当前阶段**: 阶段八-装备扩充与关卡调整 - ✅ 完成
 
-**下一阶段**: 阶段八-测试关卡与可玩验证（根据 implementation-plan.md）
+**下一阶段**: 阶段八-端到端可玩验证（用户测试）
 
 ---
 
 ## 完成记录
+
+### 2026-05-08 - 阶段八装备扩充：装备池 4→10 件
+
+#### 新增 6 件装备 ✅
+| 装备 | 分类 | 效果类型 | 核心效果 | 形状 |
+|------|------|---------|---------|------|
+| 同花透镜 | OPTICAL | RULE_MODIFY | 同花只需 4 张 | 1×1 |
+| 顺子增幅器 | MECHANICAL | RULE_MODIFY | 顺子倍率 ×2 | 1×1 |
+| 葫芦皇冠 | MAGICAL | RULE_MODIFY | 葫芦倍率 ×2 | 1×2 |
+| 王牌挂坠 | MAGICAL | RULE_MODIFY | A 基础分 11→14 | 1×1 |
+| 得分宝石 | GENERIC | SCORE_MODIFY | 出牌 +20 基础分 | 1×1 |
+| 金戒指 | GENERIC | RESOURCE | 每回合 +3 金币 | 1×1 |
+
+#### 装备池更新 ✅
+- [x] `shop_manager.gd` EQUIPMENT_POOL 从 4 件扩展到 10 件
+- [x] 覆盖全部 4 种类别（OPTICAL/MECHANICAL/MAGICAL/GENERIC）
+- [x] 覆盖全部 4 种效果类型（RULE_MODIFY/STRUCTURE/RESOURCE/SCORE_MODIFY）
+- [x] 覆盖多个 ModifyType（STRAIGHT_MIN_CARDS/FLUSH_MIN_CARDS/HAND_TYPE_MULTIPLIER/ACE_VALUE_OVERRIDE）
+
+#### 关卡调整 ✅
+- [x] `stage_1.tres`: 目标分数 100→150，回合数 3→4（更友好的入门体验）
+
+#### 新增文件 ✅
+- [x] `resources/equipment/flush_lens.tres`
+- [x] `resources/equipment/straight_doubler.tres`
+- [x] `resources/equipment/full_house_crown.tres`
+- [x] `resources/equipment/ace_pendant.tres`
+- [x] `resources/equipment/score_gem.tres`
+- [x] `resources/equipment/gold_ring.tres`
+
+#### 修改文件 ✅
+- [x] `scripts/systems/shop_manager.gd` - EQUIPMENT_POOL 10 件
+- [x] `resources/stages/stage_1.tres` - 150 分/4 回合
+
+#### 文档更新 ✅
+- [x] 更新 architecture.md - 装备清单 4→10 件完整文档
+- [x] 更新 progress.md - 本文件
+
+---
 
 ### 2026-05-08 - Bug 修复：测试反馈修复
 

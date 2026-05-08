@@ -106,7 +106,7 @@ var _play_card_displays: Array[CardDisplay] = []
 @onready var _shop_button: Button = $"../ResultPanel/ButtonContainer/ShopButton"
 @onready var _retry_button: Button = $"../ResultPanel/ButtonContainer/RetryButton"
 
-@onready var _backpack_button: Button = $"../BattleUI/ActionBar/BackpackButton"
+@onready var _backpack_button: Button = $"../BackpackButton"
 @onready var _backpack_panel: BackpackPanel = $"../BackpackPanel"
 
 @onready var _shop_scene: ShopController = $"../ShopScene"
@@ -264,8 +264,9 @@ func _initialize_equipment_system() -> void:
 		_effect_trigger.effect_triggered.connect(_on_effect_triggered)
 		_effect_trigger.rules_updated.connect(_on_rules_updated)
 	
-	# Clear existing equipment (fresh start)
-	_equipment_manager.clear()
+	# 首次创建时清空（全新游戏），跨关卡保留装备
+	if is_new_trigger:
+		_equipment_manager.clear()
 	
 	print("装备系统初始化完成")
 
@@ -810,23 +811,28 @@ func _on_shop_button_pressed() -> void:
 
 ## Handle backpack button click - toggle backpack panel
 func _on_backpack_button_pressed() -> void:
-	if _current_state != GameState.PLAYER_TURN:
-		_status_label.text = "只能在玩家回合中打开背包"
+	# 允许在玩家回合和胜利结算时打开背包
+	if _current_state != GameState.PLAYER_TURN and _current_state != GameState.VICTORY:
+		_status_label.text = "当前无法打开背包"
 		return
 	
+	_open_backpack()
+
+
+## Common backpack open logic
+func _open_backpack() -> void:
 	if _backpack_panel.visible:
-		# 面板已打开，关闭它
 		_backpack_panel.close_panel()
-	else:
-		# 打开背包面板
-		var gold: int = _stage_manager.get_player_gold() if _stage_manager else 0
-		_backpack_panel.equipment_manager = _equipment_manager
-		_backpack_panel.open_panel(gold, _stage_manager)
-		_backpack_button.disabled = true
-		_play_button.disabled = true
-		_discard_button.disabled = true
-		_reset_button.disabled = true
-		_status_label.text = "背包已打开 - 管理你的装备"
+		return
+	
+	var gold: int = _stage_manager.get_player_gold() if _stage_manager else 0
+	_backpack_panel.equipment_manager = _equipment_manager
+	_backpack_panel.open_panel(gold, _stage_manager)
+	_backpack_button.disabled = true
+	_play_button.disabled = true
+	_discard_button.disabled = true
+	_reset_button.disabled = true
+	_status_label.text = "背包已打开 - 管理你的装备"
 
 
 ## Handle backpack panel closed

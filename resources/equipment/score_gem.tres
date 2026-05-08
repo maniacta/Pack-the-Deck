@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3 uid="uid://score_gem_01"]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "得分宝石"
+description = "一颗蕴含得分的魔力宝石。每次出牌额外获得 20 点基础分加成。"
+category = 3
+effect_type = 3
+trigger_timing = 3
+shape = [Vector2i(0, 0)]
+effect_params = {
+"score_bonus": 20
+}
+priority = 2

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3 uid="uid://straight_doubler_01"]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "顺子增幅器"
+description = "一件精密机械装置，通过齿轮传动放大牌型能量。使顺子牌型的倍率翻倍。"
+category = 1
+effect_type = 0
+trigger_timing = 3
+shape = [Vector2i(0, 0)]
+effect_params = {
+"hand_type_multiplier": true,
+"multiplier_factor": 2.0,
+"target_hand_type": 4
+}
+priority = 5

@@ -16,6 +16,12 @@ const EQUIPMENT_POOL: Array[String] = [
 	"res://resources/equipment/pair_booster.tres",
 	"res://resources/equipment/perfect_lens.tres",
 	"res://resources/equipment/reinforced_anvil.tres",
+	"res://resources/equipment/flush_lens.tres",
+	"res://resources/equipment/straight_doubler.tres",
+	"res://resources/equipment/full_house_crown.tres",
+	"res://resources/equipment/ace_pendant.tres",
+	"res://resources/equipment/score_gem.tres",
+	"res://resources/equipment/gold_ring.tres",
 ]
 
 ## 当前商店配置

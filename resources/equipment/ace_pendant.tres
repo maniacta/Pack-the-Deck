@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3 uid="uid://ace_pendant_01"]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "王牌挂坠"
+description = "一枚蕴含古老力量的挂坠，能激发 A 的真正潜力。将 A 的基础分值从 11 提升至 14。"
+category = 2
+effect_type = 0
+trigger_timing = 3
+shape = [Vector2i(0, 0)]
+effect_params = {
+"ace_value": 14
+}
+priority = 3

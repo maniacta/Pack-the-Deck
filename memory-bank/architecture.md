@@ -166,25 +166,57 @@ Pack-the-Deck/
 
 ## 资源文件
 
-### 测试装备 (resources/equipment/)
+### 装备 (resources/equipment/) — 共 10 件
 
-#### lucky_coin.tres
-**名称**: Lucky Coin（幸运硬币）
-**分类**: GENERIC
+#### lucky_coin.tres — 幸运硬币
+**分类**: GENERIC | **效果类型**: RESOURCE | **触发**: ON_TURN_START
 **效果**: 每回合开始 +1 金币
 **形状**: 1×1
 
-#### perfect_lens.tres
-**名称**: Perfect Lens（完美镜片）
-**分类**: OPTICAL
+#### pair_booster.tres — 对子增幅器
+**分类**: MAGICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
+**效果**: 对子牌型倍率翻倍
+**形状**: 1×1
+
+#### perfect_lens.tres — 完美镜片
+**分类**: OPTICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
 **效果**: 顺子只需 4 张牌（规则改写）
 **形状**: 1×1
 
-#### reinforced_anvil.tres
-**名称**: Reinforced Anvil（强化铁砧）
-**分类**: MECHANICAL
-**效果**: 与相邻装备产生联动
+#### reinforced_anvil.tres — 强化铁砧
+**分类**: MECHANICAL | **效果类型**: STRUCTURE | **触发**: ON_ADJACENT
+**效果**: 与相邻装备产生联动得分加成
 **形状**: 2×2
+
+#### flush_lens.tres — 同花透镜
+**分类**: OPTICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
+**效果**: 同花只需 4 张牌（规则改写）
+**形状**: 1×1
+
+#### straight_doubler.tres — 顺子增幅器
+**分类**: MECHANICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
+**效果**: 顺子牌型倍率翻倍
+**形状**: 1×1
+
+#### full_house_crown.tres — 葫芦皇冠
+**分类**: MAGICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
+**效果**: 葫芦牌型倍率翻倍
+**形状**: 1×2
+
+#### ace_pendant.tres — 王牌挂坠
+**分类**: MAGICAL | **效果类型**: RULE_MODIFY | **触发**: ON_SCORE
+**效果**: A 基础分值 11→14
+**形状**: 1×1
+
+#### score_gem.tres — 得分宝石
+**分类**: GENERIC | **效果类型**: SCORE_MODIFY | **触发**: ON_SCORE
+**效果**: 每次出牌 +20 基础分
+**形状**: 1×1
+
+#### gold_ring.tres — 金戒指
+**分类**: GENERIC | **效果类型**: RESOURCE | **触发**: ON_TURN_START
+**效果**: 每回合 +3 金币
+**形状**: 1×1
 
 ---
 
@@ -976,7 +1008,7 @@ boss_rule_param = {"limit": 5}
 
 ---
 
-**文档版本**: v2.0  
+**文档版本**: v2.1  
 **最后更新**: 2026-05-08  
-**已完成阶段**: 阶段一至七全部完成，阶段八架构优化 + Bug 修复  
-**本次更新**: 修复商店刷新金币标签、移除自动装备测试代码、手牌上限 8→10、重写装备网格渲染
+**已完成阶段**: 阶段一至八（含装备扩充至 10 件、关卡参数调整）  
+**本次更新**: 新增 6 件装备、装备池扩展至 10 件、调整 stage_1 目标分数与回合数

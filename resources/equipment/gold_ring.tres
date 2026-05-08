@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3 uid="uid://gold_ring_01"]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_data.gd" id="1_equipment"]
+
+[resource]
+script = ExtResource("1_equipment")
+display_name = "金戒指"
+description = "一枚纯金打造的戒指，蕴含着持续的财富之力。每回合开始时获得 +3 金币。"
+category = 3
+effect_type = 2
+trigger_timing = 0
+shape = [Vector2i(0, 0)]
+effect_params = {
+"gold_per_turn": 3
+}
+priority = 1
