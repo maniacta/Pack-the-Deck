@@ -1008,7 +1008,57 @@ boss_rule_param = {"limit": 5}
 
 ---
 
-**文档版本**: v2.1  
-**最后更新**: 2026-05-08  
-**已完成阶段**: 阶段一至八（含装备扩充至 10 件、关卡参数调整）  
-**本次更新**: 新增 6 件装备、装备池扩展至 10 件、调整 stage_1 目标分数与回合数
+---
+
+## 测试系统 (tests/)
+
+### 测试文件总览（v2.2 当前状态）
+
+| 测试文件 | 测试目标 | 用例数 | 层级 |
+|---------|---------|--------|------|
+| `test_card_data.gd` | CardData + Deck | 6 | 单元 |
+| `test_hand_classifier.gd` | 10 种牌型识别 + 边界 | 13 | 单元 |
+| `test_score_calculator.gd` | ScoreCalculator + BlindType | 8 | 单元 |
+| `test_stage_config.gd` | StageConfig + Boss 规则 | 7 | 单元 |
+| `test_rule_modifier.gd` | RuleModifier + EffectTrigger | 6 | 单元 |
+| `test_stage_manager.gd` | StageManager 关卡流程 | 5 | 单元 |
+| `test_boss_rules.gd` | Boss 规则完整测试 | 5 | 单元 |
+| `test_equipment_manager.gd` | EquipmentManager 背包放置/冲突 | 11 | 单元 |
+| `test_hand_manager.gd` | HandManager 手牌/选牌管理 | 10 | 单元 |
+| `test_turn_manager.gd` | TurnManager 回合/Boss 规则 | 8 | 单元 |
+| `test_game_manager.gd` | GameManager 状态机 | 11 | 单元 |
+| `test_shop_manager.gd` | ShopManager 商店/购买/刷新 | 9 | 单元 |
+| `simulation/test_full_battle.gd` | 端到端战斗模拟 | 5 | 模拟 |
+| `simulation/test_edge_cases.gd` | 边界情况（牌组抽空等） | 9 | 模拟 |
+
+**总计**: 14 个测试文件，113+ 测试用例
+
+### BattleSimulator (tests/simulation/battle_simulator.gd)
+**类型**: `class_name BattleSimulator extends RefCounted`
+
+**职责**: 无 UI 的战斗模拟器，用于端到端游戏流程测试。模拟完整战斗过程：抽牌 → 选牌 → 出牌 → 计分 → 判定。
+
+**主要属性**:
+- `deck: Deck` - 牌组
+- `hand_manager: HandManager` - 手牌管理器
+- `turn_manager: TurnManager` - 回合管理器
+- `equipment_manager: EquipmentManager` - 装备管理器
+- `effect_trigger: EffectTrigger` - 效果触发器
+- `rule_modifier: RuleModifier` - 规则改写器
+- `current_score: int` - 当前累计得分
+- `play_history: Array[Dictionary]` - 出牌历史记录
+
+**主要方法**:
+- `setup(config, equipment, fixed_seed)` - 初始化模拟环境
+- `auto_select_best() -> Array[CardData]` - 自动选择最优牌型组合
+- `play_turn(cards) -> Dictionary` - 执行一次出牌
+- `run_full_battle() -> Dictionary` - 运行完整战斗直到结束
+- `is_victory() / is_defeat()` - 状态检查
+- `get_summary() -> String` - 战斗摘要
+
+---
+
+**文档版本**: v2.2  
+**最后更新**: 2026-05-13  
+**已完成阶段**: 阶段一至八（含装备扩充至 10 件、关卡参数调整、端到端可玩验证）  
+**本次更新**: 完成阶段八端到端验证 —— 新增 BattleSimulator 模拟器 + 6 个单元测试文件 + 2 个模拟测试文件（共 8 个新测试文件，50+ 新测试用例）
